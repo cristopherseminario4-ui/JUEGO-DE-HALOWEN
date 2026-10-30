@@ -154,7 +154,38 @@
   .mode { display: flex; flex-direction: column; align-items: flex-start; }
   .mode .left { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--gold); font-variant-numeric: tabular-nums; }
   .mode:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
-  .teamPill { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; color: var(--muted); }
+  .vs-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 14px; max-width: 680px; margin: 30px auto 0; }
+  .vs-row .team { margin: 0; }
+  .vs-row .hint { grid-column: 1 / -1; text-align: center; }
+  .vs { font-weight: 900; font-size: 30px; font-style: italic; color: var(--gold); padding-bottom: 8px; text-align: center; }
+  .team.a { --c: var(--red); } .team.b { --c: var(--purple); }
+  .team.a label, .team.b label { color: var(--c); }
+  .team input:focus { border-color: var(--c, var(--gold)); }
+
+  .duel { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .side { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 8px 14px; border-radius: 99px;
+    background: var(--card); border: 2px solid var(--line); opacity: .5; transition: opacity .2s, border-color .2s, box-shadow .2s; }
+  .side.a { --c: var(--red); } .side.b { --c: var(--purple); }
+  .side.on { opacity: 1; border-color: var(--c); box-shadow: 0 0 26px -8px var(--c); }
+  .side em { font-style: normal; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side b { font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .turn { display: inline-block; margin-right: 8px; padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 800;
+    letter-spacing: .06em; text-transform: uppercase; background: var(--c); color: #fff; max-width: 100%; overflow-wrap: anywhere; }
+
+  .final { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; margin: 26px 0; }
+  .fs { min-width: 0; padding: 20px 16px; border-radius: 20px; background: var(--card); border: 2px solid var(--line); }
+  .fs.a { --c: var(--red); } .fs.b { --c: var(--purple); }
+  .fs span { display: block; font-weight: 700; font-size: 18px; overflow-wrap: anywhere; }
+  .fs b { display: block; font-size: clamp(38px, 7vw, 54px); font-weight: 900; color: var(--c); font-variant-numeric: tabular-nums; margin: 4px 0; }
+  .fs small { color: var(--muted); font-size: 14px; }
+  .fs.win { border-color: var(--gold); box-shadow: 0 0 44px -12px var(--gold); }
+  .fs.win span::before { content: '👑 '; }
+  @media (max-width: 640px) {
+    .vs-row, .final { grid-template-columns: 1fr; }
+    .vs { padding: 0; }
+    .hud { flex-wrap: wrap; }
+    .duel { order: 3; flex-basis: 100%; }
+  }
 
   .board { margin-top: 36px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
   .board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 12px; }
@@ -186,12 +217,19 @@
     <div class="hero">
       <div class="flag"><i></i><i></i><i></i></div>
       <h1>¿Cuánto sabes<br>del <span>Perú</span>?</h1>
-      <p>Juego en parejas · 10 preguntas por ronda · ninguna pregunta se repite</p>
+      <p>Equipo contra equipo · 5 preguntas por equipo · ninguna pregunta se repite</p>
     </div>
-    <div class="team">
-      <label for="teamName">Nombre de la pareja</label>
-      <input id="teamName" maxlength="40" placeholder="Ej.: Ana y Luis" autocomplete="off">
-      <p class="hint" id="teamHint">Escriban su nombre y elijan una categoría.</p>
+    <div class="vs-row">
+      <div class="team a">
+        <label for="teamA">Equipo 1</label>
+        <input id="teamA" maxlength="40" placeholder="Ej.: Ana y Luis" autocomplete="off">
+      </div>
+      <div class="vs">VS</div>
+      <div class="team b">
+        <label for="teamB">Equipo 2</label>
+        <input id="teamB" maxlength="40" placeholder="Ej.: Rosa y Juan" autocomplete="off">
+      </div>
+      <p class="hint" id="teamHint">Escriban los nombres de los dos equipos y elijan una categoría.</p>
     </div>
     <div class="modes">
       <button class="mode" style="--accent: var(--red)" data-mode="peru">
@@ -208,15 +246,15 @@
       </button>
     </div>
     <div class="rules">
-      <span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un comodín 50/50 por ronda</span><span>⌨️ Teclas 1–4</span>
+      <span>⚔️ Turnos alternados</span><span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un 50/50 por equipo</span><span>⌨️ Teclas 1–4</span>
     </div>
 
     <div class="board">
       <div class="board-head">
-        <h3>Tabla de parejas</h3>
+        <h3>Tabla de equipos</h3>
         <span class="used" id="used"></span>
       </div>
-      <p class="empty" id="boardEmpty">Todavía no juega ninguna pareja. El primer puntaje aparecerá aquí.</p>
+      <p class="empty" id="boardEmpty">Todavía no se juega ningún duelo. El primer puntaje aparecerá aquí.</p>
       <ol id="boardList"></ol>
       <button class="reset" id="reset">Nuevo evento: borrar tabla y preguntas usadas</button>
     </div>
@@ -226,13 +264,15 @@
   <section class="screen" id="game">
     <div class="hud">
       <span class="pill" id="count">1 / 10</span>
-      <span class="pill teamPill" id="teamPill"></span>
+      <div class="duel">
+        <span class="side a" id="sideA"><em id="nameA"></em><b id="scoreA">0</b></span>
+        <span class="side b" id="sideB"><em id="nameB"></em><b id="scoreB">0</b></span>
+      </div>
       <span class="pill streak" id="streak"></span>
-      <span class="pill">Puntos <b id="score">0</b></span>
     </div>
     <div class="bar" id="bar"><i id="barFill"></i></div>
     <div class="qcard" id="qcard">
-      <span class="tag" id="tag"></span>
+      <span class="turn" id="turn"></span><span class="tag" id="tag"></span>
       <h2 class="qtext" id="qtext"></h2>
       <div class="opts" id="opts"></div>
     </div>
@@ -248,15 +288,14 @@
     <div class="result">
       <div class="emoji" id="rEmoji"></div>
       <h2 id="rTitle"></h2>
-      <div class="score" id="rScore"></div>
-      <p style="color:var(--muted)" id="rSub"></p>
-      <div class="stats">
-        <div class="stat"><b id="rHits"></b><small>Aciertos</small></div>
-        <div class="stat"><b id="rStreak"></b><small>Mejor racha</small></div>
-        <div class="stat"><b id="rTime"></b><small>Tiempo prom.</small></div>
+      <div class="final">
+        <div class="fs a" id="fA"><span id="fNameA"></span><b id="fScoreA"></b><small id="fHitsA"></small></div>
+        <div class="vs">VS</div>
+        <div class="fs b" id="fB"><span id="fNameB"></span><b id="fScoreB"></b><small id="fHitsB"></small></div>
       </div>
+      <p style="color:var(--muted)" id="rSub"></p>
       <div class="actions">
-        <button class="btn primary" id="again">Siguiente pareja →</button>
+        <button class="btn primary" id="again">Siguiente duelo →</button>
       </div>
     </div>
   </section>
@@ -579,7 +618,8 @@ const LABEL = { peru: '🦙 Perú', general: '🌎 Cultura general' };
 const PER_GAME = 10, TIME = 20;
 const $ = id => document.getElementById(id);
 
-let mode, team, deck, idx, score, streak, bestStreak, hits, times, timer, tStart, locked, fiftyUsed;
+let mode, teams, deck, idx, timer, tStart, locked;
+const cur = () => teams[idx % 2];
 
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const tagged = (list, cat) => list.map(([q, o, f]) => ({ q, ok: o[0], opts: o, f, cat }));
@@ -610,7 +650,7 @@ function renderHome() {
   document.querySelectorAll('.mode').forEach(b => {
     const n = leftFor(b.dataset.mode);
     b.disabled = n < PER_GAME;
-    b.querySelector('.left').textContent = n < PER_GAME ? 'Ya no quedan preguntas nuevas' : `${n} preguntas nuevas · ${Math.floor(n / PER_GAME)} rondas`;
+    b.querySelector('.left').textContent = n < PER_GAME ? 'Ya no quedan preguntas nuevas' : `${n} preguntas nuevas · ${Math.floor(n / PER_GAME)} duelos`;
   });
   const total = POOLS.peru.length + POOLS.general.length;
   $('used').textContent = `${usedSet().size} de ${total} preguntas usadas`;
@@ -622,7 +662,7 @@ function renderHome() {
     li.innerHTML = '<span class="pos"></span><span class="who"><span></span><small></small></span><span class="pts"></span>';
     li.querySelector('.pos').textContent = i + 1;
     li.querySelector('.who span').textContent = r.team;
-    li.querySelector('.who small').textContent = `${MODE_NAME[r.mode]} · ${r.hits}/${r.total} aciertos`;
+    li.querySelector('.who small').textContent = [MODE_NAME[r.mode], `${r.hits}/${r.total} aciertos`, r.vs && `${r.result === 'won' ? 'Ganó a' : r.result === 'tie' ? 'Empató con' : 'Perdió con'} ${r.vs}`].filter(Boolean).join(' · ');
     li.querySelector('.pts').textContent = r.score.toLocaleString('es-PE');
     $('boardList').appendChild(li);
   });
@@ -630,15 +670,18 @@ function renderHome() {
   $('reset').textContent = 'Nuevo evento: borrar tabla y preguntas usadas';
 }
 
+function need(input, msg) {
+  input.classList.remove('need'); void input.offsetWidth; input.classList.add('need');
+  $('teamHint').textContent = msg;
+  $('teamHint').classList.add('warn');
+  input.focus();
+}
+
 function start(m) {
-  team = $('teamName').value.trim();
-  if (!team) {
-    $('teamName').classList.remove('need'); void $('teamName').offsetWidth; $('teamName').classList.add('need');
-    $('teamHint').textContent = 'Primero escriban el nombre de la pareja.';
-    $('teamHint').classList.add('warn');
-    $('teamName').focus();
-    return;
-  }
+  const a = $('teamA').value.trim(), b = $('teamB').value.trim();
+  if (!a) return need($('teamA'), 'Falta el nombre del equipo 1.');
+  if (!b) return need($('teamB'), 'Falta el nombre del equipo 2.');
+  if (a.toLowerCase() === b.toLowerCase()) return need($('teamB'), 'Los dos equipos necesitan nombres distintos.');
   mode = m;
   if (m === 'mix') {
     const p = shuffle(fresh('peru')), g = shuffle(fresh('general'));
@@ -648,9 +691,10 @@ function start(m) {
     deck = shuffle(fresh(m)).slice(0, PER_GAME);
   }
   if (deck.length < PER_GAME) return renderHome();
-  idx = score = streak = bestStreak = hits = 0; times = []; fiftyUsed = false;
-  $('score').textContent = 0;
-  $('teamPill').textContent = team;
+  idx = 0;
+  teams = [a, b].map(name => ({ name, score: 0, hits: 0, streak: 0, best: 0, fifty: false, times: [] }));
+  $('nameA').textContent = a; $('nameB').textContent = b;
+  $('scoreA').textContent = $('scoreB').textContent = 0;
   show('game');
   ask();
 }
@@ -659,15 +703,20 @@ function ask() {
   const item = deck[idx];
   locked = false;
   markUsed(item.q);
+  const t = cur(), side = idx % 2 ? 'b' : 'a';
   $('count').textContent = `${idx + 1} / ${PER_GAME}`;
+  $('sideA').classList.toggle('on', side === 'a');
+  $('sideB').classList.toggle('on', side === 'b');
+  $('turn').textContent = `Turno de ${t.name}`;
+  $('turn').style.setProperty('--c', side === 'a' ? 'var(--red)' : 'var(--purple)');
   $('tag').textContent = LABEL[item.cat];
   $('qtext').textContent = item.q;
   $('fact').textContent = '';
   $('next').hidden = true;
-  $('fifty').disabled = fiftyUsed;
+  $('fifty').disabled = t.fifty;
   $('fifty').hidden = false;
-  $('streak').textContent = streak >= 2 ? `🔥 x${streak}` : '';
-  $('streak').hidden = streak < 2;
+  $('streak').textContent = t.streak >= 2 ? `🔥 x${t.streak}` : '';
+  $('streak').hidden = t.streak < 2;
   $('opts').innerHTML = '';
   shuffle(item.opts).forEach((text, i) => {
     const b = document.createElement('button');
@@ -698,27 +747,27 @@ function answer(btn) {
   if (locked) return;
   locked = true;
   cancelAnimationFrame(timer);
-  const item = deck[idx];
+  const item = deck[idx], t = cur();
   const secs = Math.min(TIME, (performance.now() - tStart) / 1000);
-  times.push(secs);
+  t.times.push(secs);
   const buttons = [...$('opts').children];
   buttons.forEach(b => { b.disabled = true; if (b.dataset.v === item.ok) b.classList.add('ok'); });
   const right = btn && btn.dataset.v === item.ok;
 
   if (right) {
-    hits++; streak++; bestStreak = Math.max(bestStreak, streak);
-    const pts = Math.round((100 + 100 * (1 - secs / TIME)) * (1 + Math.min(streak - 1, 4) * 0.25));
-    score += pts;
-    $('score').textContent = score;
+    t.hits++; t.streak++; t.best = Math.max(t.best, t.streak);
+    const pts = Math.round((100 + 100 * (1 - secs / TIME)) * (1 + Math.min(t.streak - 1, 4) * 0.25));
+    t.score += pts;
+    $(idx % 2 ? 'scoreB' : 'scoreA').textContent = t.score;
     const f = document.createElement('div');
     f.className = 'float'; f.textContent = `+${pts}`;
     $('qcard').appendChild(f); setTimeout(() => f.remove(), 1000);
   } else {
-    streak = 0;
+    t.streak = 0;
     if (btn) btn.classList.add('bad');
   }
-  $('streak').textContent = streak >= 2 ? `🔥 x${streak}` : '';
-  $('streak').hidden = streak < 2;
+  $('streak').textContent = t.streak >= 2 ? `🔥 x${t.streak}` : '';
+  $('streak').hidden = t.streak < 2;
   $('fifty').hidden = true;
   $('fact').innerHTML = `<b>${right ? '¡Correcto!' : btn ? 'Casi…' : '¡Se acabó el tiempo!'}</b> `;
   $('fact').append(item.f);
@@ -733,33 +782,34 @@ function next() {
 }
 
 function finish() {
-  const tiers = [
-    [10, '🏆', '¡Perfecto! Eres una enciclopedia'],
-    [8, '🦙', '¡Increíble! Sabes muchísimo'],
-    [6, '🌽', '¡Muy bien! Buen nivel'],
-    [4, '🧭', 'No está mal, ¡sigue practicando!'],
-    [0, '📚', '¡A repasar! La próxima sale mejor'],
-  ];
-  const [, emoji, title] = tiers.find(([min]) => hits >= min);
-  $('rEmoji').textContent = emoji;
-  $('rTitle').textContent = title;
-  $('rScore').textContent = score.toLocaleString('es-PE');
-  $('rHits').textContent = `${hits}/${PER_GAME}`;
-  $('rStreak').textContent = bestStreak;
-  $('rTime').textContent = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) + 's';
+  const [A, B] = teams, per = PER_GAME / 2;
+  const tie = A.score === B.score, win = A.score > B.score ? A : B, lose = win === A ? B : A;
+  $('rEmoji').textContent = tie ? '🤝' : '🏆';
+  $('rTitle').textContent = tie ? '¡Empate!' : `¡Gana ${win.name}!`;
+  [['A', A], ['B', B]].forEach(([k, t]) => {
+    $('fName' + k).textContent = t.name;
+    $('fScore' + k).textContent = t.score.toLocaleString('es-PE');
+    $('fHits' + k).textContent = `${t.hits}/${per} aciertos · racha ${t.best}`;
+    $('f' + k).classList.toggle('win', !tie && t === win);
+  });
 
   const rows = board();
-  rows.push({ team, mode, score, hits, total: PER_GAME });
+  teams.forEach((t, i) => rows.push({
+    team: t.name, mode, score: t.score, hits: t.hits, total: per,
+    vs: teams[1 - i].name, result: tie ? 'tie' : t === win ? 'won' : 'lost',
+  }));
   store('trivia-board', rows);
-  const pos = rows.filter(r => r.score > score).length + 1;
-  $('rSub').textContent = `${team} · Puesto ${pos} de ${rows.length} en la tabla`;
+  const pos = t => rows.filter(r => r.score > t.score).length + 1;
+  $('rSub').textContent = tie
+    ? `Los dos suman ${A.score.toLocaleString('es-PE')} puntos · puesto ${pos(A)} de ${rows.length} en la tabla`
+    : `${win.name} gana por ${(win.score - lose.score).toLocaleString('es-PE')} puntos · puesto ${pos(win)} de ${rows.length} en la tabla`;
   show('end');
-  if (hits >= 6) confetti();
+  if (!tie || A.hits) confetti();
 }
 
 function fifty() {
-  if (fiftyUsed || locked) return;
-  fiftyUsed = true;
+  if (cur().fifty || locked) return;
+  cur().fifty = true;
   $('fifty').disabled = true;
   const ok = deck[idx].ok;
   shuffle([...$('opts').children].filter(b => b.dataset.v !== ok)).slice(0, 2).forEach(b => b.classList.add('gone'));
@@ -794,13 +844,13 @@ document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.datase
 $('next').onclick = next;
 $('fifty').onclick = fifty;
 $('again').onclick = () => {
-  $('teamName').value = '';
-  $('teamHint').textContent = 'Escriban su nombre y elijan una categoría.';
+  $('teamA').value = $('teamB').value = '';
+  $('teamHint').textContent = 'Escriban los nombres de los dos equipos y elijan una categoría.';
   $('teamHint').classList.remove('warn');
   renderHome(); show('home');
-  setTimeout(() => $('teamName').focus(), 300);
+  setTimeout(() => $('teamA').focus(), 300);
 };
-$('teamName').oninput = () => { $('teamName').classList.remove('need'); $('teamHint').classList.remove('warn'); };
+['teamA', 'teamB'].forEach(id => $(id).oninput = () => { $(id).classList.remove('need'); $('teamHint').classList.remove('warn'); });
 // El visor no muestra confirm(): el botón pide un segundo clic para confirmar
 $('reset').onclick = () => {
   if (!$('reset').classList.contains('armed')) {
