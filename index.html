@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trivia Perú</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0b1e;
+    --bg2: #17142f;
+    --card: #1e1a3d;
+    --line: #2f2a5c;
+    --text: #f4f2ff;
+    --muted: #a29ccc;
+    --red: #e3263a;
+    --gold: #ffc94d;
+    --green: #45ff90;
+    --purple: #a648ff;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(900px 500px at 10% -10%, rgba(227,38,58,.28), transparent 60%),
+      radial-gradient(800px 500px at 110% 10%, rgba(166,72,255,.25), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding-block: 28px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .screen { display: none; animation: fadeUp .45s ease both; }
+  .screen.on { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Inicio ---------- */
+  .hero { text-align: center; padding: 24px 0 8px; }
+  .flag { display: inline-flex; height: 10px; width: 66px; border-radius: 4px; overflow: hidden; margin-bottom: 18px; }
+  .flag.mini { height: 30px; width: 46px; margin: 4px 0 0; border-radius: 6px; }
+  .flag i { flex: 1; background: var(--red); } .flag i:nth-child(2) { background: #fff; }
+  .hero h1 { font-size: clamp(44px, 9vw, 84px); font-weight: 900; line-height: .95; letter-spacing: -.03em; }
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--red), var(--gold) 55%, var(--purple));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--muted); font-size: 18px; margin-top: 14px; }
+  .best { display: inline-block; margin-top: 16px; padding: 6px 14px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); font-size: 14px; color: var(--gold); }
+
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 34px 0 14px; }
+  .mode {
+    text-align: left; padding: 22px 20px; border-radius: 20px; background: var(--card); border: 1px solid var(--line);
+    transition: transform .18s, border-color .18s, box-shadow .18s; position: relative; overflow: hidden;
+  }
+  .mode:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 14px 40px -12px var(--accent); }
+  .mode .ico { font-size: 34px; }
+  .mode h3 { font-size: 21px; font-weight: 800; margin: 10px 0 4px; }
+  .mode small { color: var(--muted); font-size: 14px; }
+  .mode::after { content: ''; position: absolute; right: -30px; top: -30px; width: 90px; height: 90px; border-radius: 50%; background: var(--accent); opacity: .18; }
+
+  .rules { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+  /* ---------- Juego ---------- */
+  .hud { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .pill { padding: 8px 14px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .pill b { color: var(--gold); }
+  .streak { color: var(--red); }
+  .bar { height: 10px; border-radius: 99px; background: var(--bg2); overflow: hidden; margin-bottom: 22px; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--green), var(--gold)); transform-origin: left; }
+  .bar.low i { background: var(--red); }
+
+  .qcard { background: var(--card); border: 1px solid var(--line); border-radius: 26px; padding: 30px 26px; position: relative; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,.07); color: var(--muted); }
+  .qtext { font-size: clamp(22px, 4vw, 30px); font-weight: 800; line-height: 1.2; margin: 14px 0 24px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px; text-align: left; padding: 16px; border-radius: 16px;
+    background: var(--bg2); border: 2px solid var(--line); font-size: 17px; font-weight: 600; transition: transform .12s, border-color .15s, background .15s, opacity .2s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--purple); transform: translateY(-2px); }
+  .opt kbd { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.08); font-family: inherit; font-size: 14px; color: var(--muted); }
+  .opt:disabled { cursor: default; }
+  .opt.ok { background: rgba(69,255,144,.14); border-color: var(--green); }
+  .opt.ok kbd { background: var(--green); color: #062; }
+  .opt.bad { background: rgba(227,38,58,.16); border-color: var(--red); animation: shake .35s; }
+  .opt.bad kbd { background: var(--red); color: #fff; }
+  .opt.gone { opacity: .18; pointer-events: none; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; min-height: 48px; }
+  .life { padding: 10px 16px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); font-weight: 600; font-size: 15px; }
+  .life:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .life:disabled { opacity: .35; cursor: default; }
+  .fact { flex: 1; font-size: 15px; color: var(--muted); line-height: 1.4; }
+  .fact b { color: var(--text); }
+  .next { padding: 12px 22px; border-radius: 14px; background: var(--text); color: var(--bg); font-weight: 800; }
+  .float { position: absolute; right: 24px; top: 22px; font-weight: 900; font-size: 22px; color: var(--green); animation: rise 1s ease forwards; pointer-events: none; }
+  @keyframes rise { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-34px); } }
+
+  /* ---------- Resultados ---------- */
+  .result { text-align: center; padding: 20px 0; }
+  .result .emoji { font-size: 72px; }
+  .result h2 { font-size: clamp(34px, 7vw, 54px); font-weight: 900; letter-spacing: -.02em; margin-top: 8px; }
+  .result .score { font-size: 64px; font-weight: 900; color: var(--gold); margin: 10px 0 2px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 26px 0; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .stat b { display: block; font-size: 28px; font-weight: 900; }
+  .stat small { color: var(--muted); }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { padding: 14px 26px; border-radius: 14px; font-weight: 800; font-size: 17px; }
+  .btn.primary { background: linear-gradient(90deg, var(--red), var(--purple)); color: #fff; }
+  .btn.ghost { border: 1px solid var(--line); background: var(--card); }
+
+  /* ---------- Auspiciadores ---------- */
+  .sponsors { margin-top: 46px; }
+  .sponsors h4 { text-align: center; color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 18px; }
+  .marquee { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+  .track { display: flex; align-items: center; gap: 56px; width: max-content; animation: scroll 38s linear infinite; }
+  .marquee:hover .track { animation-play-state: paused; }
+  .track img { height: 54px; width: auto; max-width: 170px; object-fit: contain; opacity: .85; transition: opacity .2s, transform .2s; }
+  .track img:hover { opacity: 1; transform: scale(1.08); }
+  .track img.tall { height: 72px; }
+  @keyframes scroll { to { transform: translateX(-50%); } }
+
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+  @media (max-width: 640px) {
+    .modes { grid-template-columns: 1fr; }
+    .opts { grid-template-columns: 1fr; }
+    .qcard { padding: 22px 16px; }
+    .foot { flex-wrap: wrap; }
+    .stats { gap: 8px; }
+    .stat b { font-size: 22px; }
+    .track img { height: 40px; } .track img.tall { height: 54px; }
+  }
+  /* ---------- Parejas y tabla ---------- */
+  .team { max-width: 460px; margin: 30px auto 0; display: grid; gap: 8px; text-align: center; }
+  .team label { font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .team input {
+    width: 100%; padding: 14px 18px; border-radius: 14px; border: 2px solid var(--line); background: var(--bg2);
+    color: var(--text); font: inherit; font-size: 20px; font-weight: 600; text-align: center;
+  }
+  .team input:focus { outline: none; border-color: var(--gold); }
+  .team input.need { border-color: var(--red); animation: shake .35s; }
+  .hint { color: var(--muted); font-size: 14px; }
+  .hint.warn { color: var(--red); font-weight: 600; }
+  .mode { display: flex; flex-direction: column; align-items: flex-start; }
+  .mode .left { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .mode:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .teamPill { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; color: var(--muted); }
+
+  .board { margin-top: 36px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
+  .board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 12px; }
+  .board h3 { font-size: 20px; font-weight: 800; }
+  .used { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); font-size: 15px; padding: 8px 0; }
+  .board ol { list-style: none; padding: 0; display: grid; gap: 6px; }
+  .board li {
+    display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; padding: 10px 12px;
+    border-radius: 12px; background: var(--bg2); font-variant-numeric: tabular-nums;
+  }
+  .board li .pos { font-weight: 900; color: var(--muted); text-align: center; }
+  .board li:nth-child(1) .pos { color: var(--gold); }
+  .board li .who { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+  .board li .who small { display: block; color: var(--muted); font-weight: 400; font-size: 13px; }
+  .board li .pts { font-weight: 900; font-size: 18px; }
+  .board li.me { outline: 2px solid var(--gold); }
+  .reset { margin-top: 16px; font-size: 13px; color: var(--muted); text-decoration: underline; }
+  .reset.armed { color: var(--red); font-weight: 800; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { .track { animation: none; flex-wrap: wrap; justify-content: center; width: auto; } }
+</style>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+
+  <!-- Inicio -->
+  <section class="screen on" id="home">
+    <div class="hero">
+      <div class="flag"><i></i><i></i><i></i></div>
+      <h1>¿Cuánto sabes<br>del <span>Perú</span>?</h1>
+      <p>Juego en parejas · 10 preguntas por ronda · ninguna pregunta se repite</p>
+    </div>
+    <div class="team">
+      <label for="teamName">Nombre de la pareja</label>
+      <input id="teamName" maxlength="40" placeholder="Ej.: Ana y Luis" autocomplete="off">
+      <p class="hint" id="teamHint">Escriban su nombre y elijan una categoría.</p>
+    </div>
+    <div class="modes">
+      <button class="mode" style="--accent: var(--red)" data-mode="peru">
+        <div class="ico"><span class="flag mini"><i></i><i></i><i></i></span></div><h3>Perú</h3><small>Historia, geografía, comida y cultura peruana</small>
+        <span class="left" data-left="peru"></span>
+      </button>
+      <button class="mode" style="--accent: var(--purple)" data-mode="general">
+        <div class="ico">🌎</div><h3>Cultura general</h3><small>Ciencia, arte, historia y el mundo</small>
+        <span class="left" data-left="general"></span>
+      </button>
+      <button class="mode" style="--accent: var(--gold)" data-mode="mix">
+        <div class="ico">🔥</div><h3>Mixto</h3><small>Un poco de todo. El reto completo</small>
+        <span class="left" data-left="mix"></span>
+      </button>
+    </div>
+    <div class="rules">
+      <span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un comodín 50/50 por ronda</span><span>⌨️ Teclas 1–4</span>
+    </div>
+
+    <div class="board">
+      <div class="board-head">
+        <h3>Tabla de parejas</h3>
+        <span class="used" id="used"></span>
+      </div>
+      <p class="empty" id="boardEmpty">Todavía no juega ninguna pareja. El primer puntaje aparecerá aquí.</p>
+      <ol id="boardList"></ol>
+      <button class="reset" id="reset">Nuevo evento: borrar tabla y preguntas usadas</button>
+    </div>
+  </section>
+
+  <!-- Juego -->
+  <section class="screen" id="game">
+    <div class="hud">
+      <span class="pill" id="count">1 / 10</span>
+      <span class="pill teamPill" id="teamPill"></span>
+      <span class="pill streak" id="streak"></span>
+      <span class="pill">Puntos <b id="score">0</b></span>
+    </div>
+    <div class="bar" id="bar"><i id="barFill"></i></div>
+    <div class="qcard" id="qcard">
+      <span class="tag" id="tag"></span>
+      <h2 class="qtext" id="qtext"></h2>
+      <div class="opts" id="opts"></div>
+    </div>
+    <div class="foot">
+      <button class="life" id="fifty">✂️ 50/50</button>
+      <p class="fact" id="fact"></p>
+      <button class="next" id="next" hidden>Siguiente →</button>
+    </div>
+  </section>
+
+  <!-- Resultados -->
+  <section class="screen" id="end">
+    <div class="result">
+      <div class="emoji" id="rEmoji"></div>
+      <h2 id="rTitle"></h2>
+      <div class="score" id="rScore"></div>
+      <p style="color:var(--muted)" id="rSub"></p>
+      <div class="stats">
+        <div class="stat"><b id="rHits"></b><small>Aciertos</small></div>
+        <div class="stat"><b id="rStreak"></b><small>Mejor racha</small></div>
+        <div class="stat"><b id="rTime"></b><small>Tiempo prom.</small></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="again">Siguiente pareja →</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="sponsors">
+    <h4>Con el apoyo de</h4>
+    <div class="marquee"><div class="track" id="track"></div></div>
+  </div>
+</div>
+
+<script>
+const SPONSORS = [
+  ['vismer-hilario', 'Vismer Hilario – Coach Financiero'],
+  ['vh-consulting', 'VH Consulting', 'tall'],
+  ['nexo-business', 'Nexo Business'],
+  ['academia-business', 'Academia Business'],
+  ['pagape', 'Pagape'],
+  ['despertar-emprendedor', 'El Despertar del Emprendedor', 'tall'],
+  ['oroberry', 'OroBerry', 'tall'],
+  ['huacachina-del-norte', 'Huacachina del Norte', 'tall'],
+  ['vyc-inmobiliaria', 'V&C Inmobiliaria', 'tall'],
+];
+
+// [pregunta, [correcta, ...incorrectas], dato curioso]
+const PERU = [
+  ['¿Cuál es la capital del Perú?', ['Lima', 'Cusco', 'Arequipa', 'Trujillo'], 'Lima fue fundada por Francisco Pizarro en 1535 como la "Ciudad de los Reyes".'],
+  ['¿En qué región se encuentra Machu Picchu?', ['Cusco', 'Puno', 'Apurímac', 'Ayacucho'], 'Machu Picchu es una de las Siete Maravillas del Mundo Moderno desde 2007.'],
+  ['¿Qué lago comparte el Perú con Bolivia?', ['Titicaca', 'Junín', 'Poopó', 'Parinacochas'], 'El Titicaca es considerado el lago navegable más alto del mundo.'],
+  ['¿Cuál es la moneda oficial del Perú?', ['Sol', 'Inti', 'Peso', 'Real'], 'El Inti circuló entre 1985 y 1991, antes de volver al Sol.'],
+  ['¿En qué año se proclamó la independencia del Perú?', ['1821', '1824', '1810', '1879'], 'San Martín la proclamó en Lima el 28 de julio de 1821.'],
+  ['¿Quién proclamó la independencia del Perú?', ['José de San Martín', 'Simón Bolívar', 'Túpac Amaru II', 'Ramón Castilla'], 'Bolívar llegó después y selló la independencia en Junín y Ayacucho (1824).'],
+  ['¿Cuál es la montaña más alta del Perú?', ['Huascarán', 'Alpamayo', 'Misti', 'Salkantay'], 'El Huascarán supera los 6 700 metros y está en la Cordillera Blanca, Áncash.'],
+  ['¿En qué región están las Líneas de Nazca?', ['Ica', 'Arequipa', 'Tacna', 'Lima'], 'Las líneas se ven mejor desde el aire y tienen más de 1 500 años.'],
+  ['¿Qué Inca fue capturado por Pizarro en Cajamarca en 1532?', ['Atahualpa', 'Huáscar', 'Pachacútec', 'Manco Inca'], 'Atahualpa ofreció llenar una habitación de oro para pagar su rescate.'],
+  ['¿Qué escritor peruano ganó el Premio Nobel de Literatura en 2010?', ['Mario Vargas Llosa', 'César Vallejo', 'José María Arguedas', 'Ricardo Palma'], 'Entre sus obras están "La ciudad y los perros" y "Conversación en La Catedral".'],
+  ['¿Qué animal aparece en el escudo nacional del Perú?', ['Vicuña', 'Llama', 'Cóndor', 'Alpaca'], 'La vicuña representa la riqueza del reino animal del Perú.'],
+  ['¿Cuál es la flor nacional del Perú?', ['Cantuta', 'Orquídea', 'Rosa', 'Girasol'], 'La cantuta era considerada flor sagrada por los incas.'],
+  ['¿Cuántos departamentos tiene el Perú?', ['24', '20', '25', '28'], 'Además de los 24 departamentos está la Provincia Constitucional del Callao.'],
+  ['¿Cómo se llama la ciudad de barro más grande de América, cerca de Trujillo?', ['Chan Chan', 'Caral', 'Kuélap', 'Pachacámac'], 'Chan Chan fue la capital del reino Chimú.'],
+  ['¿Cuál es la lengua originaria más hablada del Perú?', ['Quechua', 'Aimara', 'Asháninka', 'Shipibo'], 'El quechua es idioma oficial junto al castellano y el aimara.'],
+  ['¿En qué región se descubrió la tumba del Señor de Sipán (1987)?', ['Lambayeque', 'La Libertad', 'Piura', 'Áncash'], 'Es considerada una de las tumbas intactas más importantes de América.'],
+  ['¿En qué Mundial volvió a jugar el Perú después de 36 años?', ['Rusia 2018', 'Brasil 2014', 'Catar 2022', 'Alemania 2006'], 'Su participación anterior había sido en España 1982.'],
+  ['El oasis de la Huacachina está en la región…', ['Ica', 'Piura', 'Tacna', 'Moquegua'], 'Es uno de los pocos oasis naturales de Sudamérica, rodeado de dunas.'],
+  ['¿Cómo se llama la fusión de la cocina china y peruana?', ['Chifa', 'Nikkei', 'Criolla', 'Novoandina'], 'La cocina nikkei es la fusión peruano-japonesa.'],
+  ['¿Qué cultura construyó la fortaleza de Kuélap?', ['Chachapoyas', 'Moche', 'Wari', 'Nazca'], 'Kuélap tiene murallas de hasta 20 metros de altura en Amazonas.'],
+  ['¿A qué ciudad le dicen "la Ciudad Blanca"?', ['Arequipa', 'Cajamarca', 'Huancayo', 'Ayacucho'], 'Se debe al sillar, piedra volcánica blanca de sus construcciones.'],
+  ['¿Con qué se prepara la chicha morada?', ['Maíz morado', 'Uva quebranta', 'Camote', 'Mora'], 'Suele llevar piña, canela, clavo y limón.'],
+  ['¿Cuál es el aguardiente de uva bandera del Perú?', ['Pisco', 'Tequila', 'Cachaza', 'Ron'], 'El Día del Pisco Sour se celebra el primer sábado de febrero.'],
+  ['¿Qué baile tiene su concurso nacional más famoso en Trujillo?', ['Marinera', 'Huaylas', 'Tondero', 'Festejo'], 'Se baila en pareja y con pañuelo.'],
+  ['¿Quién escribió "Los heraldos negros"?', ['César Vallejo', 'Abraham Valdelomar', 'Ciro Alegría', 'Manuel Scorza'], 'Vallejo nació en Santiago de Chuco, La Libertad, en 1892.'],
+  ['¿Cuál es la ciudad más grande del mundo sin acceso por carretera?', ['Iquitos', 'Pucallpa', 'Tarapoto', 'Puerto Maldonado'], 'A Iquitos solo se llega por avión o por río.'],
+  ['¿Cómo se llama la red de caminos del Imperio Inca?', ['Qhapaq Ñan', 'Inti Raymi', 'Tawantinsuyo', 'Ayni'], 'Recorría más de 30 000 km y es Patrimonio de la Humanidad.'],
+  ['¿Qué medalla ganó el vóley femenino peruano en Seúl 1988?', ['Plata', 'Oro', 'Bronce', 'Ninguna'], 'Perdió la final ante la Unión Soviética en un partido histórico.'],
+  ['¿Qué tubérculo tiene más de 3 000 variedades en el Perú?', ['Papa', 'Yuca', 'Olluco', 'Oca'], 'El Día Nacional de la Papa se celebra el 30 de mayo.'],
+  ['¿Cuál es el principal puerto del Perú?', ['Callao', 'Paita', 'Matarani', 'Chimbote'], 'Chancay es el nuevo megapuerto, pero el Callao sigue siendo el principal.'],
+  ['¿Qué cultura es famosa por sus mantos textiles finísimos?', ['Paracas', 'Chavín', 'Inca', 'Lima'], 'Los mantos de Paracas tienen más de 2 000 años.'],
+  ['¿Qué fiesta inca celebraba al dios Sol?', ['Inti Raymi', 'Qoyllur Rit\'i', 'Corpus Christi', 'Candelaria'], 'Se recrea cada 24 de junio en la explanada de Sacsayhuamán.'],
+  ['¿Cuál es la ciudad más antigua de América?', ['Caral', 'Cusco', 'Chan Chan', 'Tiahuanaco'], 'Caral tiene cerca de 5 000 años, contemporánea a las pirámides de Egipto.'],
+  ['¿En qué región está el Cañón del Colca?', ['Arequipa', 'Cusco', 'Puno', 'Huancavelica'], 'Es uno de los mejores lugares para ver cóndores andinos.'],
+  ['¿De dónde viene el famoso Oso Paddington?', ['"Lo más profundo del Perú"', 'Bolivia', 'Ecuador', 'Chile'], 'En los libros, su tía Lucy vive en una casa para osos retirados en Lima.'],
+  // Historia
+  ['¿Qué cultura preinca construyó el templo de Chavín de Huántar?', ['Chavín', 'Moche', 'Nazca', 'Chimú'], 'En su interior está el Lanzón, un monolito de casi 5 metros.'],
+  ['¿Qué cultura es famosa por sus "huacos retrato" de cerámica?', ['Moche', 'Paracas', 'Inca', 'Wari'], 'Los mochicas retrataban rostros con gestos tan reales que parecen fotos.'],
+  ['¿Qué Inca mandó construir Machu Picchu?', ['Pachacútec', 'Atahualpa', 'Manco Cápac', 'Huayna Cápac'], 'Pachacútec convirtió al Cusco en la capital de un gran imperio.'],
+  ['¿Cómo se llamaba el sistema de cuerdas con nudos que usaban los incas para registrar datos?', ['Quipu', 'Tocapu', 'Ayllu', 'Mita'], 'Los quipucamayoc eran los especialistas que los leían.'],
+  ['¿En cuántos suyos se dividía el Tawantinsuyo?', ['4', '3', '5', '6'], 'Chinchaysuyo, Collasuyo, Antisuyo y Contisuyo.'],
+  ['¿Según la leyenda, quién fundó el Cusco?', ['Manco Cápac', 'Pachacútec', 'Viracocha', 'Túpac Yupanqui'], 'La leyenda dice que salió del lago Titicaca con Mama Ocllo.'],
+  ['¿Qué batalla de 1824 selló la independencia del Perú y de Sudamérica?', ['Ayacucho', 'Junín', 'Pichincha', 'Arica'], 'Fue el 9 de diciembre de 1824, bajo el mando de Antonio José de Sucre.'],
+  ['¿Qué héroe peruano murió al mando del Huáscar en el combate de Angamos?', ['Miguel Grau', 'Francisco Bolognesi', 'Alfonso Ugarte', 'Andrés A. Cáceres'], 'Por su trato a los enemigos lo llaman "el Caballero de los Mares".'],
+  ['¿Qué héroe dijo que pelearía "hasta quemar el último cartucho"?', ['Francisco Bolognesi', 'Miguel Grau', 'José Olaya', 'Leoncio Prado'], 'Lo dijo antes de la batalla del Morro de Arica en 1880.'],
+  ['¿Contra qué país pelearon Perú y Bolivia en la Guerra del Pacífico?', ['Chile', 'Ecuador', 'Argentina', 'Colombia'], 'La guerra duró de 1879 a 1884.'],
+  ['¿Quién encabezó la gran rebelión indígena de 1780 contra los españoles?', ['Túpac Amaru II', 'Juan Santos Atahualpa', 'Mateo Pumacahua', 'Micaela Bastidas'], 'Su nombre real era José Gabriel Condorcanqui.'],
+  ['¿Qué presidente abolió la esclavitud en el Perú en 1854?', ['Ramón Castilla', 'Nicolás de Piérola', 'Augusto B. Leguía', 'Manuel Pardo'], 'Castilla también abolió el tributo indígena.'],
+  ['¿Quién fue el primer presidente del Perú?', ['José de la Riva-Agüero', 'José de San Martín', 'Simón Bolívar', 'Ramón Castilla'], 'Fue nombrado presidente en 1823.'],
+  ['¿En qué año se fundó Lima?', ['1535', '1492', '1572', '1610'], 'Se fundó el 18 de enero de 1535.'],
+  ['¿Qué universidad peruana es conocida como "la Decana de América"?', ['San Marcos', 'La Católica', 'San Agustín', 'La Cantuta'], 'Fue fundada el 12 de mayo de 1551.'],
+  ['¿Cuál es la Constitución vigente del Perú?', ['La de 1993', 'La de 1979', 'La de 1933', 'La de 2001'], 'El Perú ha tenido más de diez constituciones en su historia.'],
+  ['¿Qué aviador es héroe nacional por su sacrificio en el conflicto de 1941?', ['José Abelardo Quiñones', 'Jorge Chávez', 'Pedro Ruiz Gallo', 'Carlos Martínez de Pinillos'], 'El Día de la Aviación se celebra el 23 de julio en su honor.'],
+  ['¿Qué peruano es considerado pionero de la era espacial por su motor de cohete?', ['Pedro Paulet', 'Santiago Antúnez de Mayolo', 'Jorge Chávez', 'Federico Villarreal'], 'Diseñó un motor de combustible líquido a fines del siglo XIX.'],
+  ['¿Qué estudiante de medicina se inoculó una enfermedad para estudiarla y murió por ella?', ['Daniel Alcides Carrión', 'Hipólito Unanue', 'Cayetano Heredia', 'Honorio Delgado'], 'El 5 de octubre, Día de la Medicina Peruana, lo recuerda.'],
+  ['¿Qué día se celebra el Día de la Bandera en el Perú?', ['7 de junio', '28 de julio', '8 de octubre', '29 de agosto'], 'Recuerda la batalla de Arica de 1880.'],
+  ['¿Según la tradición, dónde se inspiró San Martín para los colores de la bandera?', ['En Paracas, al ver unas parihuanas', 'En Lima, al ver la Plaza de Armas', 'En Cusco, al ver el Inti Raymi', 'En Arequipa, al ver el Misti'], 'Las parihuanas son flamencos de alas rojas y pecho blanco.'],
+  ['¿Quién compuso la música del Himno Nacional del Perú?', ['José Bernardo Alcedo', 'José de la Torre Ugarte', 'Daniel Alomía Robles', 'Chabuca Granda'], 'La letra es de José de la Torre Ugarte.'],
+  // Arqueología
+  ['¿Qué arqueólogo descubrió la tumba del Señor de Sipán?', ['Walter Alva', 'Julio C. Tello', 'Ruth Shady', 'Hiram Bingham'], 'Hoy sus tesoros están en el Museo Tumbas Reales de Sipán, en Lambayeque.'],
+  ['¿Qué arqueóloga peruana dirige las investigaciones de Caral?', ['Ruth Shady', 'María Reiche', 'Rebeca Carrión', 'Victoria de la Jara'], 'Gracias a su trabajo, Caral es Patrimonio de la Humanidad desde 2009.'],
+  ['¿Quién es considerado el padre de la arqueología peruana?', ['Julio C. Tello', 'Walter Alva', 'Max Uhle', 'Raúl Porras'], 'Tello descubrió la cultura Paracas en 1925.'],
+  ['¿Qué investigadora alemana dedicó su vida a estudiar y proteger las Líneas de Nazca?', ['María Reiche', 'Ruth Shady', 'Frida Kahlo', 'Rosa Luxemburgo'], 'Vivió casi 50 años junto a las líneas.'],
+  ['¿Dónde se encontró a la Señora de Cao, gobernante mochica?', ['La Libertad', 'Lambayeque', 'Ica', 'Cusco'], 'Fue hallada en 2006 en el complejo El Brujo.'],
+  ['¿Cerca de qué ciudad actual estaba la capital del imperio Wari?', ['Ayacucho', 'Trujillo', 'Puno', 'Chiclayo'], 'Los wari dominaron gran parte de los Andes antes que los incas.'],
+  ['¿Cómo se llama la pirámide de adobe en pleno Miraflores, Lima?', ['Huaca Pucllana', 'Huaca Rajada', 'Huaca del Sol', 'Pachacámac'], 'Fue construida por la cultura Lima hace unos 1 500 años.'],
+  ['¿Qué complejo inca se conoce como la "hermana sagrada de Machu Picchu"?', ['Choquequirao', 'Ollantaytambo', 'Pisac', 'Moray'], 'Solo se llega caminando unos dos días.'],
+  ['¿Qué fortaleza inca de grandes piedras está en las alturas del Cusco?', ['Sacsayhuamán', 'Kuélap', 'Chan Chan', 'Tambo Colorado'], 'Algunas piedras pesan más de 100 toneladas.'],
+  ['¿Qué pueblo vive en islas flotantes hechas de totora en el Titicaca?', ['Los uros', 'Los aimaras de Taquile', 'Los shipibos', 'Los asháninkas'], 'Las islas se renuevan agregando capas de totora.'],
+  // Geografía y naturaleza
+  ['¿Qué región natural ocupa más de la mitad del territorio peruano?', ['La selva', 'La sierra', 'La costa', 'El altiplano'], 'La Amazonía cubre cerca del 60 % del país.'],
+  ['¿Con cuántos países limita el Perú?', ['5', '4', '6', '3'], 'Ecuador, Colombia, Brasil, Bolivia y Chile.'],
+  ['¿Cuál de estos países NO limita con el Perú?', ['Argentina', 'Colombia', 'Brasil', 'Bolivia'], 'Argentina limita con Bolivia y Chile, pero no con el Perú.'],
+  ['¿Qué dos ríos se unen para formar el río Amazonas?', ['Marañón y Ucayali', 'Huallaga y Napo', 'Rímac y Mantaro', 'Madre de Dios y Urubamba'], 'Se unen cerca de Nauta, en Loreto.'],
+  ['¿Qué corriente marina fría pasa frente a la costa peruana?', ['Corriente de Humboldt', 'Corriente del Golfo', 'Corriente de Brasil', 'Corriente del Niño'], 'Gracias a ella el mar peruano es uno de los más ricos en peces del mundo.'],
+  ['¿Cómo se llama el fenómeno que calienta el mar peruano y trae lluvias fuertes?', ['El Niño', 'La Niña', 'El Friaje', 'La Garúa'], 'Su nombre viene de que solía aparecer cerca de Navidad.'],
+  ['¿Qué islas de Paracas son famosas por sus lobos marinos y pingüinos?', ['Islas Ballestas', 'Islas Lobos de Afuera', 'Isla San Lorenzo', 'Islas Palomino'], 'Les dicen "las Galápagos peruanas".'],
+  ['¿En qué región está la Montaña de Siete Colores (Vinicunca)?', ['Cusco', 'Puno', 'Arequipa', 'Junín'], 'Está a más de 5 000 metros de altura.'],
+  ['¿En qué región está la catarata de Gocta?', ['Amazonas', 'San Martín', 'Junín', 'Cajamarca'], 'Mide unos 771 metros de caída.'],
+  ['¿En qué región está el desierto de Sechura?', ['Piura', 'Ica', 'Tacna', 'Lambayeque'], 'Es el desierto más extenso del Perú.'],
+  ['¿Qué cordillera peruana tiene la mayor cantidad de glaciares tropicales del mundo?', ['Cordillera Blanca', 'Cordillera Negra', 'Cordillera Huayhuash', 'Cordillera Vilcanota'], 'Allí está el Parque Nacional Huascarán.'],
+  ['¿Qué volcán es el símbolo de Arequipa?', ['Misti', 'Ubinas', 'Sabancaya', 'Coropuna'], 'Mide unos 5 800 metros de altura.'],
+  ['¿A qué ciudad le dicen "la Ciudad de la Eterna Primavera"?', ['Trujillo', 'Lima', 'Tacna', 'Cajamarca'], 'Por su clima templado casi todo el año.'],
+  ['¿Qué ciudad es conocida como la "Capital del Folklore Peruano"?', ['Puno', 'Cusco', 'Ayacucho', 'Huancayo'], 'Tiene cientos de danzas típicas.'],
+  ['¿En qué región están las playas de Máncora?', ['Piura', 'Tumbes', 'Lambayeque', 'Lima'], 'Es uno de los destinos de surf más conocidos del país.'],
+  ['¿Cuál es el ave nacional del Perú?', ['Gallito de las rocas', 'Cóndor andino', 'Colibrí', 'Pelícano'], 'En quechua se llama "tunqui".'],
+  ['¿Qué perro peruano fue declarado Patrimonio Nacional?', ['Perro sin pelo del Perú', 'Chihuahua', 'Pastor andino', 'Xoloitzcuintle'], 'Aparece en cerámicas de culturas preincas.'],
+  ['¿Qué caballo peruano es famoso por su andar suave llamado "paso llano"?', ['Caballo peruano de paso', 'Pura sangre inglés', 'Árabe', 'Criollo'], 'Su andar es tan suave que el jinete casi no se mueve.'],
+  ['¿Qué planta andina gigante lleva el nombre de un naturalista italiano?', ['Puya Raimondi', 'Ichu', 'Queñua', 'Totora'], 'Puede medir más de 10 metros y florece una sola vez en su vida.'],
+  ['¿Qué delfín de color especial vive en los ríos de la Amazonía peruana?', ['Delfín rosado', 'Delfín azul', 'Delfín nariz de botella', 'Delfín dorado'], 'Hay muchas leyendas amazónicas sobre él.'],
+  ['¿De qué fruta es el Perú el mayor exportador del mundo?', ['Arándanos', 'Manzanas', 'Plátanos', 'Naranjas'], 'En pocos años pasó de casi no producir a ser el número uno.'],
+  // Comida y bebida
+  ['¿Qué salsa lleva la papa a la huancaína?', ['Ají amarillo y queso', 'Maní y rocoto', 'Huacatay y queso', 'Tomate y cebolla'], 'Se sirve con huevo duro y aceitunas.'],
+  ['¿De qué se hacen tradicionalmente los anticuchos?', ['Corazón de res', 'Pollo', 'Pescado', 'Cerdo'], 'Se cocinan en palitos a la parrilla.'],
+  ['¿Qué postre limeño lleva manjar blanco y merengue con oporto?', ['Suspiro a la limeña', 'Mazamorra morada', 'Arroz con leche', 'King Kong'], 'Se dice que su nombre lo puso el poeta José Gálvez.'],
+  ['¿Qué animal es plato típico en Cusco y Arequipa?', ['Cuy', 'Conejo', 'Pato', 'Pavo'], 'En la Última Cena de la Catedral del Cusco aparece un cuy.'],
+  ['¿Qué ají le da el color al ají de gallina?', ['Ají amarillo', 'Rocoto', 'Ají panca', 'Ají limo'], 'Se acompaña con arroz, papa y aceituna.'],
+  ['¿Cuál es la base de la causa limeña?', ['Papa amarilla', 'Yuca', 'Camote', 'Arroz'], 'Se rellena con pollo, atún o mariscos.'],
+  ['¿De qué ciudad es típico el rocoto relleno?', ['Arequipa', 'Piura', 'Iquitos', 'Tacna'], 'Se acompaña con pastel de papa.'],
+  ['¿En qué hoja se envuelve el juane?', ['Bijao', 'Plátano', 'Maíz', 'Achira'], 'Es el plato típico de la fiesta de San Juan en la selva.'],
+  ['¿Cómo se cocina la pachamanca?', ['Bajo tierra con piedras calientes', 'En horno de barro', 'En olla de presión', 'Frita en aceite'], 'Pachamanca significa "olla de tierra" en quechua.'],
+  ['¿Con qué se hace la masa de los picarones?', ['Zapallo y camote', 'Papa y yuca', 'Harina y plátano', 'Maíz y queso'], 'Se bañan en miel de chancaca.'],
+  ['¿Qué grano andino tuvo su Año Internacional de la ONU en 2013?', ['Quinua', 'Kiwicha', 'Cebada', 'Trigo'], 'Es muy rica en proteínas.'],
+  ['¿Qué fruta andina es un sabor de helado favorito de los peruanos?', ['Lúcuma', 'Maracuyá', 'Guanábana', 'Chirimoya'], 'Tiene una pulpa amarilla de sabor dulce y harinoso.'],
+  ['¿Qué fruta amazónica tiene muchísima vitamina C?', ['Camu camu', 'Aguaje', 'Cocona', 'Copoazú'], 'Tiene mucha más vitamina C que la naranja.'],
+  ['¿De qué hierba es el sabor de la Inca Kola?', ['Hierba luisa', 'Menta', 'Manzanilla', 'Muña'], 'Fue creada en 1935 por la familia Lindley.'],
+  ['¿Qué ingrediente le da la espuma al pisco sour?', ['Clara de huevo', 'Leche', 'Crema', 'Gaseosa'], 'Se termina con unas gotas de amargo de angostura.'],
+  ['¿Cómo se llama el jugo que queda del cebiche?', ['Leche de tigre', 'Leche de pantera', 'Caldo de mar', 'Jugo de limón'], 'Muchos dicen que levanta el ánimo.'],
+  ['¿En qué mes se come el turrón de Doña Pepa?', ['Octubre', 'Diciembre', 'Julio', 'Abril'], 'Se asocia a la procesión del Señor de los Milagros.'],
+  ['¿Qué bebida andina se hace de maíz fermentado?', ['Chicha de jora', 'Chicha morada', 'Emoliente', 'Masato'], 'El masato amazónico se prepara con yuca.'],
+  ['¿Qué restaurante peruano fue elegido el mejor del mundo en 2023?', ['Central', 'Astrid & Gastón', 'Maido', 'La Mar'], 'Lo dirigen los chefs Virgilio Martínez y Pía León.'],
+  ['¿Qué plato chifa se hace con arroz frito, huevo y cebolla china?', ['Arroz chaufa', 'Tallarín saltado', 'Wantán frito', 'Kam lu wantán'], 'Viene de la influencia de inmigrantes chinos desde el siglo XIX.'],
+  // Cultura, música y fe
+  ['¿Qué santa limeña es la primera santa de América?', ['Santa Rosa de Lima', 'Santa Teresa', 'Santa Clara', 'Santa Ana'], 'Su día es el 30 de agosto, feriado nacional.'],
+  ['¿Qué santo peruano es conocido como "el santo de la escoba"?', ['San Martín de Porres', 'San Juan Macías', 'Santo Toribio', 'San Francisco Solano'], 'Fue el primer santo afroamericano.'],
+  ['¿Qué procesión llena Lima de morado cada octubre?', ['Señor de los Milagros', 'Corpus Christi', 'Virgen de la Candelaria', 'Señor de Luren'], 'Es una de las procesiones católicas más grandes del mundo.'],
+  ['¿Qué fiesta de Puno es Patrimonio Cultural Inmaterial de la Humanidad?', ['Virgen de la Candelaria', 'Inti Raymi', 'Qoyllur Riti', 'Carnaval de Cajamarca'], 'La UNESCO la reconoció en 2014.'],
+  ['¿Qué danza andina se baila con dos hojas de metal en la mano?', ['Danza de tijeras', 'Huaylas', 'Diablada', 'Carnaval'], 'Es Patrimonio Inmaterial de la Humanidad desde 2010.'],
+  ['¿Qué instrumento afroperuano es una caja de madera en la que te sientas?', ['Cajón', 'Quijada', 'Charango', 'Bombo'], 'Es Patrimonio Cultural de la Nación desde 2001.'],
+  ['¿Quién compuso "La flor de la canela"?', ['Chabuca Granda', 'Susana Baca', 'Eva Ayllón', 'Lucha Reyes'], 'Es un vals criollo dedicado a Lima.'],
+  ['¿Quién compuso "El cóndor pasa"?', ['Daniel Alomía Robles', 'Felipe Pinglo', 'Chabuca Granda', 'Augusto Polo Campos'], 'Simon & Garfunkel la hicieron famosa en el mundo.'],
+  ['¿Qué cantante peruana tenía una voz de casi cinco octavas y triunfó en Hollywood?', ['Yma Súmac', 'Susana Baca', 'Eva Ayllón', 'Cecilia Barraza'], 'Brilló en Estados Unidos en los años 50.'],
+  ['¿Qué cantante afroperuana fue ministra de Cultura en 2011?', ['Susana Baca', 'Eva Ayllón', 'Chabuca Granda', 'Cecilia Bracamonte'], 'También ganó el Grammy Latino.'],
+  ['¿Qué tenor peruano es una estrella de la ópera mundial?', ['Juan Diego Flórez', 'Gian Marco', 'Pedro Suárez-Vértiz', 'Andrés Calamaro'], 'Nació en Lima en 1973.'],
+  ['¿Quién escribió "Tradiciones peruanas"?', ['Ricardo Palma', 'César Vallejo', 'Abraham Valdelomar', 'Clorinda Matto'], 'Palma también reconstruyó la Biblioteca Nacional tras la guerra.'],
+  ['¿Quién escribió "Los ríos profundos"?', ['José María Arguedas', 'Ciro Alegría', 'Mario Vargas Llosa', 'Julio Ramón Ribeyro'], 'Arguedas escribía mezclando el castellano y el quechua.'],
+  ['¿Quién escribió "El mundo es ancho y ajeno"?', ['Ciro Alegría', 'José María Arguedas', 'Manuel Scorza', 'Alfredo Bryce'], 'Se publicó en 1941.'],
+  ['¿Qué peruana fue la primera Miss Universo latinoamericana?', ['Gladys Zender', 'Janick Maceta', 'Natalie Vértiz', 'Jessica Newton'], 'Ganó la corona en 1957.'],
+  ['¿Qué significa "Inti" en quechua?', ['Sol', 'Luna', 'Tierra', 'Agua'], 'Inti era el dios más importante de los incas.'],
+  ['¿Qué significa "wasi" en quechua?', ['Casa', 'Comida', 'Río', 'Montaña'], 'Por eso hay tantos negocios llamados "Wasi".'],
+  ['En jerga peruana, ¿qué es la "chamba"?', ['El trabajo', 'La fiesta', 'La comida', 'El dinero'], '"¡Me voy a la chamba!"'],
+  ['En jerga peruana, ¿qué es el "jato"?', ['La casa', 'El carro', 'El colegio', 'La playa'], '"Nos vemos en mi jato."'],
+  ['En jerga peruana, ¿qué es un "pata"?', ['Un amigo', 'Un jefe', 'Un policía', 'Un niño'], '"Es mi pata de toda la vida."'],
+  // Lugares
+  ['¿En qué distrito de Lima está el Puente de los Suspiros?', ['Barranco', 'Miraflores', 'San Isidro', 'Chorrillos'], 'Dicen que si cruzas sin respirar se cumple tu deseo.'],
+  ['¿En qué parque de Lima está el Circuito Mágico del Agua?', ['Parque de la Reserva', 'Parque Kennedy', 'Campo de Marte', 'Parque del Amor'], 'Tiene un récord Guinness como el mayor complejo de fuentes del mundo.'],
+  ['¿Qué fortaleza colonial protege el puerto del Callao?', ['Real Felipe', 'San Cristóbal', 'Santa Catalina', 'El Morro'], 'Fue construida en el siglo XVIII contra piratas.'],
+  ['¿En qué región están las ruinas de Ollantaytambo?', ['Cusco', 'Apurímac', 'Puno', 'Junín'], 'Es un pueblo inca que sigue habitado hoy.'],
+  // Deporte
+  ['¿Qué jugador es el máximo goleador histórico de la selección peruana?', ['Paolo Guerrero', 'Teófilo Cubillas', 'Jefferson Farfán', 'Claudio Pizarro'], 'Superó la marca de Cubillas en 2016.'],
+  ['¿Cómo apodaban a Teófilo Cubillas?', ['El Nene', 'El Bombardero', 'El Cholo', 'La Foquita'], 'Hizo 10 goles en Mundiales.'],
+  ['¿En qué Mundial llegó Perú a cuartos de final de la mano de Cubillas?', ['México 1970', 'Argentina 1978', 'España 1982', 'Uruguay 1930'], 'Perdió en cuartos contra el Brasil de Pelé.'],
+  ['¿En qué año ganó el Perú su segunda Copa América?', ['1975', '1939', '1983', '2019'], 'La primera la ganó en 1939, de local.'],
+  ['¿Qué surfista peruana fue campeona mundial en 2004?', ['Sofía Mulánovich', 'Analí Gómez', 'Vania Torres', 'Daniella Rosas'], 'Fue la primera sudamericana en ganar el título mundial de surf.'],
+  ['¿Quién ganó la única medalla de oro olímpica del Perú?', ['Edwin Vásquez', 'Juan Giha', 'Francisco Boza', 'Cecilia Tait'], 'Ganó en tiro con pistola en Londres 1948.'],
+  ['¿Qué ciudad fue sede de los Juegos Panamericanos 2019?', ['Lima', 'Bogotá', 'Santiago', 'Buenos Aires'], 'Fue el evento deportivo más grande de la historia del Perú.'],
+  ['¿Qué boxeadora peruana fue campeona mundial en 2009?', ['Kina Malpartida', 'Linda Lecca', 'Kina Gómez', 'Ana Castillo'], 'Fue la primera peruana campeona mundial de boxeo.'],
+];
+
+const GENERAL = [
+  ['¿Cuál es el planeta más grande del sistema solar?', ['Júpiter', 'Saturno', 'Neptuno', 'Tierra'], 'En Júpiter cabrían más de 1 300 Tierras.'],
+  ['¿Cuál es el océano más grande?', ['Pacífico', 'Atlántico', 'Índico', 'Ártico'], 'El Pacífico cubre casi un tercio de la superficie de la Tierra.'],
+  ['¿Quién escribió "Don Quijote de la Mancha"?', ['Miguel de Cervantes', 'Lope de Vega', 'Garcilaso de la Vega', 'Quevedo'], 'La primera parte se publicó en 1605.'],
+  ['¿Cuál es el símbolo químico del oro?', ['Au', 'Ag', 'Or', 'Go'], 'Viene del latín "aurum".'],
+  ['¿Cuántos huesos tiene un adulto humano?', ['206', '180', '230', '312'], 'Un bebé nace con alrededor de 300; muchos se fusionan al crecer.'],
+  ['¿Quién pintó la Mona Lisa?', ['Leonardo da Vinci', 'Miguel Ángel', 'Rafael', 'Botticelli'], 'Se exhibe en el Museo del Louvre, en París.'],
+  ['¿Cuál es el país más poblado del mundo?', ['India', 'China', 'Estados Unidos', 'Indonesia'], 'India superó a China en 2023.'],
+  ['¿En qué año llegó el ser humano a la Luna?', ['1969', '1959', '1972', '1965'], 'Neil Armstrong y Buzz Aldrin, con la misión Apolo 11.'],
+  ['¿Qué gas absorben las plantas para la fotosíntesis?', ['Dióxido de carbono', 'Oxígeno', 'Nitrógeno', 'Helio'], 'A cambio liberan oxígeno.'],
+  ['¿Cuál es la capital de Australia?', ['Canberra', 'Sídney', 'Melbourne', 'Perth'], 'Canberra fue elegida como punto medio entre Sídney y Melbourne.'],
+  ['¿Quién escribió "Cien años de soledad"?', ['Gabriel García Márquez', 'Julio Cortázar', 'Pablo Neruda', 'Jorge Luis Borges'], 'La historia transcurre en el pueblo ficticio de Macondo.'],
+  ['¿Qué planeta es conocido como el "planeta rojo"?', ['Marte', 'Venus', 'Mercurio', 'Júpiter'], 'Su color se debe al óxido de hierro de su superficie.'],
+  ['¿A qué temperatura hierve el agua a nivel del mar?', ['100 °C', '90 °C', '120 °C', '80 °C'], 'En Cusco, por la altura, hierve a unos 88 °C.'],
+  ['¿Quién formuló la teoría de la relatividad?', ['Albert Einstein', 'Isaac Newton', 'Nikola Tesla', 'Galileo Galilei'], 'Su famosa ecuación es E = mc².'],
+  ['¿Qué país ganó el Mundial de Fútbol de 2022?', ['Argentina', 'Francia', 'Brasil', 'Croacia'], 'Le ganó a Francia por penales en Catar.'],
+  ['¿Cuál es la moneda de Japón?', ['Yen', 'Yuan', 'Won', 'Rupia'], 'El yuan es de China y el won de Corea.'],
+  ['¿Quién pintó "La noche estrellada"?', ['Vincent van Gogh', 'Claude Monet', 'Pablo Picasso', 'Salvador Dalí'], 'La pintó en 1889 desde un sanatorio en Francia.'],
+  ['¿Cuál es el elemento más abundante del universo?', ['Hidrógeno', 'Oxígeno', 'Helio', 'Carbono'], 'Forma cerca del 75 % de la materia normal.'],
+  ['¿Cuál es el animal más grande del planeta?', ['Ballena azul', 'Elefante africano', 'Tiburón ballena', 'Jirafa'], 'Puede medir unos 30 metros de largo.'],
+  ['¿En qué año cayó el Muro de Berlín?', ['1989', '1991', '1979', '1961'], 'Cayó el 9 de noviembre de 1989.'],
+  ['¿Cuál es la montaña más alta del mundo?', ['Everest', 'K2', 'Aconcagua', 'Kilimanjaro'], 'Mide unos 8 849 metros sobre el nivel del mar.'],
+  ['¿Cuál es la capital de Canadá?', ['Ottawa', 'Toronto', 'Montreal', 'Vancouver'], 'Toronto es la ciudad más grande, pero Ottawa es la capital.'],
+  ['¿Quién escribió "Romeo y Julieta"?', ['William Shakespeare', 'Charles Dickens', 'Oscar Wilde', 'Molière'], 'La obra transcurre en Verona, Italia.'],
+  ['¿Cuál es el desierto no polar más árido del mundo?', ['Atacama', 'Sahara', 'Gobi', 'Kalahari'], 'Hay zonas de Atacama donde casi nunca ha llovido.'],
+  ['¿Cuál es la raíz cuadrada de 144?', ['12', '14', '11', '16'], '12 × 12 = 144.'],
+  ['¿En qué país nacieron los Juegos Olímpicos?', ['Grecia', 'Italia', 'Egipto', 'Francia'], 'Los antiguos se celebraban en Olimpia desde el 776 a. C.'],
+  ['¿En qué año llegó Cristóbal Colón a América?', ['1492', '1500', '1453', '1519'], 'Llegó el 12 de octubre a una isla de las Bahamas.'],
+  ['¿Qué lenguaje se usa para estructurar páginas web?', ['HTML', 'Python', 'SQL', 'Java'], 'HTML significa HyperText Markup Language.'],
+  ['¿Cuántos minutos tiene un día?', ['1 440', '1 240', '1 600', '960'], '24 horas × 60 minutos = 1 440.'],
+  ['¿Qué instrumento tiene normalmente 88 teclas?', ['Piano', 'Acordeón', 'Órgano', 'Arpa'], '52 teclas son blancas y 36 negras.'],
+  ['¿Qué órgano del cuerpo produce la insulina?', ['Páncreas', 'Hígado', 'Riñón', 'Estómago'], 'La insulina ayuda a regular el azúcar en la sangre.'],
+  ['¿Cuál es el idioma con más hablantes nativos?', ['Chino mandarín', 'Inglés', 'Español', 'Hindi'], 'El español ocupa el segundo lugar en hablantes nativos.'],
+  ['¿Cuántos jugadores tiene un equipo de fútbol en la cancha?', ['11', '10', '9', '12'], 'Incluyendo al arquero.'],
+  ['¿Qué científico propuso la ley de la gravitación universal?', ['Isaac Newton', 'Galileo Galilei', 'Copérnico', 'Kepler'], 'La publicó en 1687 en sus "Principia".'],
+  ['¿Qué metal ligero se usa en las baterías de los celulares?', ['Litio', 'Plomo', 'Cobre', 'Hierro'], 'El litio es tan ligero que flota en el agua.'],
+  // Ciencia y naturaleza
+  ['¿Cuál es el planeta más cercano al Sol?', ['Mercurio', 'Venus', 'Marte', 'Tierra'], 'Un año en Mercurio dura solo 88 días.'],
+  ['¿Cuántos planetas tiene el sistema solar?', ['8', '9', '7', '10'], 'Plutón dejó de ser planeta en 2006.'],
+  ['¿Qué planeta es famoso por sus grandes anillos?', ['Saturno', 'Júpiter', 'Urano', 'Marte'], 'Sus anillos están hechos de hielo y roca.'],
+  ['¿Cuál es el planeta más caliente del sistema solar?', ['Venus', 'Mercurio', 'Marte', 'Júpiter'], 'Su atmósfera atrapa el calor y supera los 460 °C.'],
+  ['¿Cuál es la estrella más cercana a la Tierra?', ['El Sol', 'Sirio', 'Alfa Centauri', 'La Estrella Polar'], 'Su luz tarda unos 8 minutos en llegarnos.'],
+  ['¿Cuál es el hueso más largo del cuerpo humano?', ['Fémur', 'Tibia', 'Húmero', 'Columna'], 'Está en el muslo.'],
+  ['¿Cuántos dientes tiene normalmente un adulto?', ['32', '28', '36', '24'], 'Incluyendo las cuatro muelas del juicio.'],
+  ['¿Cuál es el órgano más grande del cuerpo humano?', ['La piel', 'El hígado', 'El intestino', 'Los pulmones'], 'En un adulto pesa alrededor de 4 kilos.'],
+  ['¿Qué tipo de sangre es el donante universal?', ['O negativo', 'AB positivo', 'A positivo', 'B negativo'], 'AB positivo es el receptor universal.'],
+  ['¿Qué vitamina produce la piel cuando le da el sol?', ['Vitamina D', 'Vitamina C', 'Vitamina A', 'Vitamina B12'], 'Ayuda a fijar el calcio en los huesos.'],
+  ['¿Cuántos cromosomas tiene una célula humana?', ['46', '23', '48', '64'], 'Son 23 pares.'],
+  ['¿Quién descubrió la penicilina?', ['Alexander Fleming', 'Louis Pasteur', 'Marie Curie', 'Robert Koch'], 'La descubrió por accidente en 1928.'],
+  ['¿Quién propuso la teoría de la evolución por selección natural?', ['Charles Darwin', 'Gregor Mendel', 'Isaac Newton', 'Aristóteles'], 'Publicó "El origen de las especies" en 1859.'],
+  ['¿Qué científica ganó dos premios Nobel en dos ciencias distintas?', ['Marie Curie', 'Rosalind Franklin', 'Ada Lovelace', 'Jane Goodall'], 'Ganó en Física (1903) y en Química (1911).'],
+  ['¿Cuál es la fórmula química del agua?', ['H₂O', 'CO₂', 'O₂', 'NaCl'], 'Dos átomos de hidrógeno y uno de oxígeno.'],
+  ['¿Qué elemento químico tiene el símbolo Fe?', ['Hierro', 'Flúor', 'Fósforo', 'Plata'], 'Viene del latín "ferrum".'],
+  ['¿Qué elemento químico tiene el símbolo Na?', ['Sodio', 'Nitrógeno', 'Níquel', 'Neón'], 'Viene del latín "natrium".'],
+  ['¿Cuál es el gas más abundante del aire?', ['Nitrógeno', 'Oxígeno', 'Dióxido de carbono', 'Hidrógeno'], 'Es cerca del 78 % del aire.'],
+  ['¿Qué capa de la atmósfera nos protege de los rayos ultravioleta?', ['La capa de ozono', 'La ionosfera', 'La troposfera', 'La exosfera'], 'Está en la estratosfera.'],
+  ['¿En qué unidad se mide la fuerza?', ['Newton', 'Vatio', 'Julio', 'Pascal'], 'Lleva el nombre de Isaac Newton.'],
+  ['¿Cuál es el animal terrestre más rápido?', ['Guepardo', 'León', 'Caballo', 'Antílope'], 'Puede superar los 100 km/h en carreras cortas.'],
+  ['¿Cuál es el ave más grande del mundo?', ['Avestruz', 'Cóndor', 'Águila real', 'Emú'], 'No vuela, pero corre a unos 70 km/h.'],
+  ['¿Cuántas patas tiene una araña?', ['8', '6', '10', '12'], 'Los insectos tienen 6; por eso la araña no es insecto.'],
+  ['¿Cuántos corazones tiene un pulpo?', ['3', '1', '2', '4'], 'Además, su sangre es azul.'],
+  ['¿Qué mamífero puede volar?', ['Murciélago', 'Ardilla', 'Lémur', 'Pingüino'], 'La ardilla voladora solo planea.'],
+  // Geografía
+  ['¿Cuál es el país más grande del mundo?', ['Rusia', 'Canadá', 'China', 'Brasil'], 'Tiene 11 husos horarios.'],
+  ['¿Cuál es el país más pequeño del mundo?', ['Ciudad del Vaticano', 'Mónaco', 'San Marino', 'Malta'], 'Mide menos de medio kilómetro cuadrado.'],
+  ['¿Cuál es el continente más grande?', ['Asia', 'África', 'América', 'Europa'], 'Allí vive casi el 60 % de la población mundial.'],
+  ['¿Cuál es el desierto cálido más grande del mundo?', ['Sahara', 'Atacama', 'Gobi', 'Kalahari'], 'Es casi tan grande como Estados Unidos.'],
+  ['¿Cuál es la isla más grande del mundo?', ['Groenlandia', 'Australia', 'Madagascar', 'Borneo'], 'Australia se considera un continente.'],
+  ['¿Cuál es la cascada más alta del mundo?', ['Salto Ángel', 'Cataratas del Iguazú', 'Niágara', 'Cataratas Victoria'], 'Está en Venezuela y mide casi 1 000 metros.'],
+  ['¿Cuál es el río más largo de Europa?', ['Volga', 'Danubio', 'Rin', 'Sena'], 'Desemboca en el mar Caspio.'],
+  ['¿Qué canal une los océanos Atlántico y Pacífico?', ['Canal de Panamá', 'Canal de Suez', 'Canal de la Mancha', 'Estrecho de Gibraltar'], 'Se inauguró en 1914.'],
+  ['¿Qué montañas separan Europa de Asia?', ['Los Urales', 'Los Alpes', 'Los Pirineos', 'El Himalaya'], 'Están en Rusia.'],
+  ['¿Cuántos países hay en Sudamérica?', ['12', '10', '13', '9'], 'La Guayana Francesa es territorio de Francia, no un país.'],
+  ['¿Qué país tiene forma de bota?', ['Italia', 'Chile', 'Grecia', 'Portugal'], 'La "punta de la bota" se llama Calabria.'],
+  ['¿Cuál es la capital de Brasil?', ['Brasilia', 'Río de Janeiro', 'São Paulo', 'Salvador'], 'Fue construida desde cero e inaugurada en 1960.'],
+  ['¿Cuál es la capital de Japón?', ['Tokio', 'Kioto', 'Osaka', 'Hiroshima'], 'Kioto fue la capital por más de mil años.'],
+  ['¿Cuál es la capital de Turquía?', ['Ankara', 'Estambul', 'Esmirna', 'Antalya'], 'Estambul es la ciudad más grande, pero la capital es Ankara.'],
+  ['¿Cuál es la capital de Nueva Zelanda?', ['Wellington', 'Auckland', 'Sídney', 'Christchurch'], 'Es la capital más austral del mundo.'],
+  ['¿Cuál es la capital de Egipto?', ['El Cairo', 'Alejandría', 'Luxor', 'Giza'], 'Las pirámides de Giza están muy cerca de El Cairo.'],
+  ['¿Cuál es la capital de Colombia?', ['Bogotá', 'Medellín', 'Cali', 'Cartagena'], 'Está a unos 2 600 metros de altura.'],
+  ['¿Cuál es la capital constitucional de Bolivia?', ['Sucre', 'La Paz', 'Santa Cruz', 'Cochabamba'], 'La Paz es la sede del gobierno.'],
+  ['¿En qué ciudad está el Coliseo?', ['Roma', 'Atenas', 'Madrid', 'Estambul'], 'Se inauguró en el año 80 d. C.'],
+  ['¿En qué país está la antigua ciudad de Petra?', ['Jordania', 'Egipto', 'Grecia', 'Turquía'], 'Está tallada en roca rosada.'],
+  ['¿En qué país está el Taj Mahal?', ['India', 'Pakistán', 'Irán', 'Nepal'], 'Un emperador lo hizo construir en memoria de su esposa.'],
+  ['¿En qué país está Chichén Itzá?', ['México', 'Guatemala', 'Honduras', 'Belice'], 'Fue una gran ciudad maya en Yucatán.'],
+  ['¿En qué ciudad está el Cristo Redentor?', ['Río de Janeiro', 'São Paulo', 'Buenos Aires', 'Lisboa'], 'Está sobre el cerro Corcovado.'],
+  ['¿Qué idioma se habla oficialmente en Brasil?', ['Portugués', 'Español', 'Inglés', 'Francés'], 'Es el país con más hablantes de portugués.'],
+  ['¿Cuál es la moneda del Reino Unido?', ['Libra esterlina', 'Euro', 'Dólar', 'Franco'], 'Es una de las monedas más antiguas que siguen en uso.'],
+  // Historia
+  ['¿Quién fue el primer ser humano en pisar la Luna?', ['Neil Armstrong', 'Buzz Aldrin', 'Yuri Gagarin', 'Michael Collins'], 'Gagarin fue el primero en viajar al espacio, en 1961.'],
+  ['¿En qué año empezó la Segunda Guerra Mundial?', ['1939', '1914', '1941', '1945'], 'Comenzó con la invasión de Alemania a Polonia.'],
+  ['¿En qué año terminó la Segunda Guerra Mundial?', ['1945', '1944', '1950', '1939'], 'Terminó tras la rendición de Japón en septiembre.'],
+  ['¿En qué año empezó la Primera Guerra Mundial?', ['1914', '1918', '1905', '1939'], 'Duró hasta 1918.'],
+  ['¿En qué año empezó la Revolución Francesa?', ['1789', '1776', '1815', '1848'], 'Comenzó con la toma de la Bastilla el 14 de julio.'],
+  ['¿En qué año se independizó Estados Unidos?', ['1776', '1789', '1812', '1492'], 'Lo celebran cada 4 de julio.'],
+  ['¿Quién fue el primer emperador de Roma?', ['Augusto', 'Julio César', 'Nerón', 'Calígula'], 'Julio César nunca fue emperador.'],
+  ['¿De qué país fue reina Cleopatra?', ['Egipto', 'Grecia', 'Persia', 'Roma'], 'Fue la última reina del Egipto antiguo.'],
+  ['¿Quién inventó la imprenta de tipos móviles en Europa?', ['Johannes Gutenberg', 'Leonardo da Vinci', 'Galileo', 'Martín Lutero'], 'Lo hizo alrededor de 1450.'],
+  ['¿En qué batalla fue derrotado Napoleón en 1815?', ['Waterloo', 'Trafalgar', 'Austerlitz', 'Normandía'], 'Después fue desterrado a la isla de Santa Elena.'],
+  ['¿Qué famoso barco se hundió en 1912?', ['Titanic', 'Lusitania', 'Santa María', 'Mayflower'], 'Chocó con un iceberg en su primer viaje.'],
+  ['¿De qué país fue presidente Nelson Mandela?', ['Sudáfrica', 'Kenia', 'Nigeria', 'Egipto'], 'Estuvo 27 años preso antes de ser presidente.'],
+  ['¿Qué expedición dio la primera vuelta al mundo?', ['Magallanes-Elcano', 'Colón', 'Vasco da Gama', 'Marco Polo'], 'Terminó en 1522 con solo 18 sobrevivientes.'],
+  ['¿Qué pueblo fundó la ciudad de Tenochtitlan?', ['Los mexicas (aztecas)', 'Los mayas', 'Los incas', 'Los olmecas'], 'Hoy en ese lugar está la Ciudad de México.'],
+  // Arte, literatura y música
+  ['¿Quién pintó el "Guernica"?', ['Pablo Picasso', 'Salvador Dalí', 'Joan Miró', 'Diego Velázquez'], 'Retrata el bombardeo de un pueblo español en 1937.'],
+  ['¿Quién pintó el techo de la Capilla Sixtina?', ['Miguel Ángel', 'Leonardo da Vinci', 'Rafael', 'Donatello'], 'Tardó unos cuatro años en pintarlo.'],
+  ['¿Qué compositor siguió componiendo aunque se quedó sordo?', ['Beethoven', 'Mozart', 'Bach', 'Chopin'], 'Compuso la Novena Sinfonía casi sin oír.'],
+  ['¿Quién compuso "Las cuatro estaciones"?', ['Antonio Vivaldi', 'Mozart', 'Beethoven', 'Bach'], 'Son cuatro conciertos para violín.'],
+  ['¿Quién escribió la saga de "Harry Potter"?', ['J. K. Rowling', 'J. R. R. Tolkien', 'C. S. Lewis', 'Stephen King'], 'El primer libro salió en 1997.'],
+  ['¿Quién escribió "El principito"?', ['Antoine de Saint-Exupéry', 'Julio Verne', 'Victor Hugo', 'Albert Camus'], 'Su autor también era piloto de aviones.'],
+  ['¿Quién escribió "La Odisea"?', ['Homero', 'Sófocles', 'Platón', 'Virgilio'], 'Cuenta el regreso de Ulises a su isla, Ítaca.'],
+  ['¿Quién escribió la novela "1984"?', ['George Orwell', 'Aldous Huxley', 'Ray Bradbury', 'H. G. Wells'], 'De ella viene la frase "el Gran Hermano te vigila".'],
+  ['¿Qué poeta chilena fue la primera latinoamericana en ganar el Nobel de Literatura?', ['Gabriela Mistral', 'Isabel Allende', 'Violeta Parra', 'Alfonsina Storni'], 'Lo ganó en 1945.'],
+  ['¿De qué país era el poeta Pablo Neruda?', ['Chile', 'Argentina', 'Perú', 'Colombia'], 'Ganó el Nobel de Literatura en 1971.'],
+  ['¿De qué país era la pintora Frida Kahlo?', ['México', 'España', 'Colombia', 'Cuba'], 'Pintó muchos autorretratos.'],
+  ['¿Cuántas cuerdas tiene una guitarra clásica?', ['6', '4', '5', '12'], 'El charango andino tiene 10 cuerdas.'],
+  ['¿De qué ciudad inglesa era la banda The Beatles?', ['Liverpool', 'Londres', 'Mánchester', 'Birmingham'], 'Se formaron en 1960.'],
+  ['¿A quién llaman "el Rey del Pop"?', ['Michael Jackson', 'Elvis Presley', 'Prince', 'Freddie Mercury'], 'Elvis es "el Rey del Rock".'],
+  ['¿De qué país es la cantante Shakira?', ['Colombia', 'México', 'Venezuela', 'España'], 'Nació en Barranquilla.'],
+  // Deportes
+  ['¿Cada cuántos años se hacen los Juegos Olímpicos de verano?', ['4', '2', '5', '3'], 'Los de 2020 se hicieron en 2021 por la pandemia.'],
+  ['¿Qué país ha ganado más Mundiales de fútbol?', ['Brasil', 'Alemania', 'Italia', 'Argentina'], 'Brasil tiene 5 títulos.'],
+  ['¿Cuántos jugadores tiene en cancha un equipo de vóley?', ['6', '5', '7', '8'], 'El líbero es el que usa una camiseta de otro color.'],
+  ['¿Cuántos puntos vale un tiro desde lejos de la línea en el básquet?', ['3', '2', '4', '1'], 'Un tiro libre vale 1 punto.'],
+  ['¿Dónde fueron los Juegos Olímpicos de 2024?', ['París', 'Tokio', 'Los Ángeles', 'Londres'], 'Los siguientes serán en Los Ángeles 2028.'],
+  ['¿Qué tres países organizaron el Mundial 2026?', ['EE. UU., México y Canadá', 'España, Portugal y Marruecos', 'Argentina, Uruguay y Paraguay', 'Brasil, Chile y Perú'], 'Fue el primer Mundial con 48 selecciones.'],
+  ['¿En qué club europeo debutó Lionel Messi?', ['Barcelona', 'Real Madrid', 'PSG', 'Manchester City'], 'Llegó a Barcelona a los 13 años.'],
+  ['¿Qué torneo de tenis se juega en canchas de arcilla?', ['Roland Garros', 'Wimbledon', 'US Open', 'Australian Open'], 'Wimbledon se juega sobre césped.'],
+  // Tecnología, números y más
+  ['¿Quién fundó Apple junto con Steve Wozniak?', ['Steve Jobs', 'Bill Gates', 'Mark Zuckerberg', 'Elon Musk'], 'Empezaron en un garaje en 1976.'],
+  ['¿Quién cofundó Microsoft junto a Paul Allen?', ['Bill Gates', 'Steve Jobs', 'Larry Page', 'Jeff Bezos'], 'Microsoft se fundó en 1975.'],
+  ['¿Quién inventó la World Wide Web?', ['Tim Berners-Lee', 'Bill Gates', 'Steve Jobs', 'Alan Turing'], 'La creó en 1989 en el CERN.'],
+  ['¿Qué red social de fotos compró Facebook en 2012?', ['Instagram', 'TikTok', 'Snapchat', 'Pinterest'], 'Pagó alrededor de mil millones de dólares.'],
+  ['¿Qué números usa el sistema binario?', ['0 y 1', '1 y 2', '0 al 9', '1 al 10'], 'Es el lenguaje básico de las computadoras.'],
+  ['¿Cuánto suman los ángulos de un triángulo?', ['180°', '360°', '90°', '270°'], 'En un cuadrado suman 360°.'],
+  ['¿Cuál es el valor aproximado de pi?', ['3,1416', '2,7182', '1,6180', '3,0000'], 'El 14 de marzo (3/14) es el Día de Pi.'],
+  ['¿Cuántos segundos tiene una hora?', ['3 600', '1 000', '6 000', '360'], '60 minutos × 60 segundos.'],
+  ['¿Cuántos días tiene un año bisiesto?', ['366', '365', '364', '367'], 'Febrero tiene 29 días ese año.'],
+  ['¿Qué número representa la "L" en números romanos?', ['50', '100', '500', '10'], 'C es 100 y D es 500.'],
+  ['¿Qué color sale al mezclar azul y amarillo?', ['Verde', 'Morado', 'Naranja', 'Marrón'], 'Rojo y amarillo dan naranja.'],
+  ['¿Cuántos colores tiene el arcoíris?', ['7', '5', '6', '8'], 'Rojo, naranja, amarillo, verde, azul, añil y violeta.'],
+  ['¿Cuántos idiomas oficiales tiene la ONU?', ['6', '4', '5', '8'], 'Árabe, chino, español, francés, inglés y ruso.'],
+];
+
+const LABEL = { peru: '🦙 Perú', general: '🌎 Cultura general' };
+const PER_GAME = 10, TIME = 20;
+const $ = id => document.getElementById(id);
+
+let mode, team, deck, idx, score, streak, bestStreak, hits, times, timer, tStart, locked, fiftyUsed;
+
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const tagged = (list, cat) => list.map(([q, o, f]) => ({ q, ok: o[0], opts: o, f, cat }));
+
+// Guarda en el navegador; si el navegador no lo permite, al menos recuerda mientras la página siga abierta
+const mem = {};
+function store(k, v) {
+  if (v !== undefined) { mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} return; }
+  try { const s = localStorage.getItem(k); if (s !== null) return JSON.parse(s); } catch {}
+  return mem[k] ?? null;
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Preguntas ya mostradas en este dispositivo: nunca se vuelven a usar hasta un "Nuevo evento"
+const POOLS = { peru: tagged(PERU, 'peru'), general: tagged(GENERAL, 'general') };
+const MODE_NAME = { peru: 'Perú', general: 'Cultura general', mix: 'Mixto' };
+const usedSet = () => new Set(store('trivia-used') || []);
+const fresh = cat => { const u = usedSet(); return POOLS[cat].filter(x => !u.has(x.q)); };
+const markUsed = q => { const u = usedSet(); u.add(q); store('trivia-used', [...u]); };
+const leftFor = m => m === 'mix' ? fresh('peru').length + fresh('general').length : fresh(m).length;
+const board = () => store('trivia-board') || [];
+
+function renderHome() {
+  document.querySelectorAll('.mode').forEach(b => {
+    const n = leftFor(b.dataset.mode);
+    b.disabled = n < PER_GAME;
+    b.querySelector('.left').textContent = n < PER_GAME ? 'Ya no quedan preguntas nuevas' : `${n} preguntas nuevas · ${Math.floor(n / PER_GAME)} rondas`;
+  });
+  const total = POOLS.peru.length + POOLS.general.length;
+  $('used').textContent = `${usedSet().size} de ${total} preguntas usadas`;
+  const rows = board().slice().sort((a, b) => b.score - a.score);
+  $('boardEmpty').hidden = rows.length > 0;
+  $('boardList').innerHTML = '';
+  rows.forEach((r, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="pos"></span><span class="who"><span></span><small></small></span><span class="pts"></span>';
+    li.querySelector('.pos').textContent = i + 1;
+    li.querySelector('.who span').textContent = r.team;
+    li.querySelector('.who small').textContent = `${MODE_NAME[r.mode]} · ${r.hits}/${r.total} aciertos`;
+    li.querySelector('.pts').textContent = r.score.toLocaleString('es-PE');
+    $('boardList').appendChild(li);
+  });
+  $('reset').classList.remove('armed');
+  $('reset').textContent = 'Nuevo evento: borrar tabla y preguntas usadas';
+}
+
+function start(m) {
+  team = $('teamName').value.trim();
+  if (!team) {
+    $('teamName').classList.remove('need'); void $('teamName').offsetWidth; $('teamName').classList.add('need');
+    $('teamHint').textContent = 'Primero escriban el nombre de la pareja.';
+    $('teamHint').classList.add('warn');
+    $('teamName').focus();
+    return;
+  }
+  mode = m;
+  if (m === 'mix') {
+    const p = shuffle(fresh('peru')), g = shuffle(fresh('general'));
+    const np = Math.min(p.length, Math.max(PER_GAME / 2, PER_GAME - g.length));
+    deck = shuffle(p.slice(0, np).concat(g.slice(0, PER_GAME - np)));
+  } else {
+    deck = shuffle(fresh(m)).slice(0, PER_GAME);
+  }
+  if (deck.length < PER_GAME) return renderHome();
+  idx = score = streak = bestStreak = hits = 0; times = []; fiftyUsed = false;
+  $('score').textContent = 0;
+  $('teamPill').textContent = team;
+  show('game');
+  ask();
+}
+
+function ask() {
+  const item = deck[idx];
+  locked = false;
+  markUsed(item.q);
+  $('count').textContent = `${idx + 1} / ${PER_GAME}`;
+  $('tag').textContent = LABEL[item.cat];
+  $('qtext').textContent = item.q;
+  $('fact').textContent = '';
+  $('next').hidden = true;
+  $('fifty').disabled = fiftyUsed;
+  $('fifty').hidden = false;
+  $('streak').textContent = streak >= 2 ? `🔥 x${streak}` : '';
+  $('streak').hidden = streak < 2;
+  $('opts').innerHTML = '';
+  shuffle(item.opts).forEach((text, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.innerHTML = `<kbd>${i + 1}</kbd><span></span>`;
+    b.querySelector('span').textContent = text;
+    b.dataset.v = text;
+    b.onclick = () => answer(b);
+    $('opts').appendChild(b);
+  });
+  runTimer();
+}
+
+function runTimer() {
+  cancelAnimationFrame(timer);
+  tStart = performance.now();
+  const tick = now => {
+    const left = Math.max(0, TIME - (now - tStart) / 1000);
+    $('barFill').style.transform = `scaleX(${left / TIME})`;
+    $('bar').classList.toggle('low', left < 5);
+    if (left <= 0) return answer(null);
+    timer = requestAnimationFrame(tick);
+  };
+  timer = requestAnimationFrame(tick);
+}
+
+function answer(btn) {
+  if (locked) return;
+  locked = true;
+  cancelAnimationFrame(timer);
+  const item = deck[idx];
+  const secs = Math.min(TIME, (performance.now() - tStart) / 1000);
+  times.push(secs);
+  const buttons = [...$('opts').children];
+  buttons.forEach(b => { b.disabled = true; if (b.dataset.v === item.ok) b.classList.add('ok'); });
+  const right = btn && btn.dataset.v === item.ok;
+
+  if (right) {
+    hits++; streak++; bestStreak = Math.max(bestStreak, streak);
+    const pts = Math.round((100 + 100 * (1 - secs / TIME)) * (1 + Math.min(streak - 1, 4) * 0.25));
+    score += pts;
+    $('score').textContent = score;
+    const f = document.createElement('div');
+    f.className = 'float'; f.textContent = `+${pts}`;
+    $('qcard').appendChild(f); setTimeout(() => f.remove(), 1000);
+  } else {
+    streak = 0;
+    if (btn) btn.classList.add('bad');
+  }
+  $('streak').textContent = streak >= 2 ? `🔥 x${streak}` : '';
+  $('streak').hidden = streak < 2;
+  $('fifty').hidden = true;
+  $('fact').innerHTML = `<b>${right ? '¡Correcto!' : btn ? 'Casi…' : '¡Se acabó el tiempo!'}</b> `;
+  $('fact').append(item.f);
+  $('next').hidden = false;
+  $('next').textContent = idx === PER_GAME - 1 ? 'Ver resultado →' : 'Siguiente →';
+  $('next').focus();
+}
+
+function next() {
+  idx++;
+  if (idx < PER_GAME) ask(); else finish();
+}
+
+function finish() {
+  const tiers = [
+    [10, '🏆', '¡Perfecto! Eres una enciclopedia'],
+    [8, '🦙', '¡Increíble! Sabes muchísimo'],
+    [6, '🌽', '¡Muy bien! Buen nivel'],
+    [4, '🧭', 'No está mal, ¡sigue practicando!'],
+    [0, '📚', '¡A repasar! La próxima sale mejor'],
+  ];
+  const [, emoji, title] = tiers.find(([min]) => hits >= min);
+  $('rEmoji').textContent = emoji;
+  $('rTitle').textContent = title;
+  $('rScore').textContent = score.toLocaleString('es-PE');
+  $('rHits').textContent = `${hits}/${PER_GAME}`;
+  $('rStreak').textContent = bestStreak;
+  $('rTime').textContent = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) + 's';
+
+  const rows = board();
+  rows.push({ team, mode, score, hits, total: PER_GAME });
+  store('trivia-board', rows);
+  const pos = rows.filter(r => r.score > score).length + 1;
+  $('rSub').textContent = `${team} · Puesto ${pos} de ${rows.length} en la tabla`;
+  show('end');
+  if (hits >= 6) confetti();
+}
+
+function fifty() {
+  if (fiftyUsed || locked) return;
+  fiftyUsed = true;
+  $('fifty').disabled = true;
+  const ok = deck[idx].ok;
+  shuffle([...$('opts').children].filter(b => b.dataset.v !== ok)).slice(0, 2).forEach(b => b.classList.add('gone'));
+}
+
+function confetti() {
+  const c = $('confetti'), ctx = c.getContext('2d');
+  c.width = innerWidth; c.height = innerHeight;
+  const colors = ['#e3263a', '#ffffff', '#ffc94d', '#a648ff', '#45ff90'];
+  const ps = Array.from({ length: 160 }, () => ({
+    x: Math.random() * c.width, y: -20 - Math.random() * c.height * .5,
+    vx: (Math.random() - .5) * 3, vy: 2 + Math.random() * 4, r: 4 + Math.random() * 6,
+    a: Math.random() * 6, va: (Math.random() - .5) * .3, col: colors[Math.random() * colors.length | 0],
+  }));
+  const t0 = performance.now();
+  (function draw(now) {
+    ctx.clearRect(0, 0, c.width, c.height);
+    ps.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.a += p.va;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.col;
+      ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
+    });
+    if (now - t0 < 4000) requestAnimationFrame(draw); else ctx.clearRect(0, 0, c.width, c.height);
+  })(t0);
+}
+
+// Auspiciadores (duplicados para un loop continuo)
+$('track').innerHTML = [...SPONSORS, ...SPONSORS]
+  .map(([file, name, cls]) => `<img src="logos/${file}.png" alt="${name}" title="${name}" class="${cls || ''}">`).join('');
+
+document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.dataset.mode));
+$('next').onclick = next;
+$('fifty').onclick = fifty;
+$('again').onclick = () => {
+  $('teamName').value = '';
+  $('teamHint').textContent = 'Escriban su nombre y elijan una categoría.';
+  $('teamHint').classList.remove('warn');
+  renderHome(); show('home');
+  setTimeout(() => $('teamName').focus(), 300);
+};
+$('teamName').oninput = () => { $('teamName').classList.remove('need'); $('teamHint').classList.remove('warn'); };
+// El visor no muestra confirm(): el botón pide un segundo clic para confirmar
+$('reset').onclick = () => {
+  if (!$('reset').classList.contains('armed')) {
+    $('reset').classList.add('armed');
+    $('reset').textContent = '¿Seguro? Toca otra vez para borrar todo';
+    return;
+  }
+  store('trivia-used', []); store('trivia-board', []);
+  renderHome();
+};
+document.addEventListener('keydown', e => {
+  if (!$('game').classList.contains('on')) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 4 && !locked) { const b = $('opts').children[n - 1]; if (b && !b.classList.contains('gone')) answer(b); }
+  else if ((e.key === 'Enter' || e.key === ' ') && locked && e.target !== $('next')) { e.preventDefault(); next(); }
+});
+renderHome();
+</script>
+
+</html>
