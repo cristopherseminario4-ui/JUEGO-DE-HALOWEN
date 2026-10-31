@@ -180,7 +180,7 @@
     box-shadow: 0 8px 0 rgba(0,0,0,.35), 0 0 34px -8px var(--c); transition: transform .08s, box-shadow .08s, opacity .2s; }
   .buzz.b { --c: var(--purple); }
   .buzz span { min-width: 0; overflow-wrap: anywhere; }
-  .buzz span::before { content: '🔔 '; }
+  .buzz span::before { content: '🎈 '; }
   .buzz kbd { flex: none; font-family: inherit; font-size: 14px; padding: 4px 9px; border-radius: 8px; background: rgba(0,0,0,.25); }
   .buzz:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
   .buzz:disabled { opacity: .22; cursor: default; }
@@ -253,7 +253,7 @@
     <div class="hero">
       <div class="flag"><i></i><i></i><i></i></div>
       <h1>¿Cuánto sabes<br>del <span>Perú</span>?</h1>
-      <p>Equipo contra equipo · el primero en tocar la campana responde · ninguna pregunta se repite</p>
+      <p>Equipo contra equipo · el primero en llegar al globo responde · ninguna pregunta se repite</p>
     </div>
     <div class="vs-row">
       <div class="team a">
@@ -282,7 +282,7 @@
       </button>
     </div>
     <div class="rules">
-      <span>🔔 Campanas: teclas A y L</span><span>↩️ Si fallas, rebota al otro equipo</span><span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un 50/50 por equipo</span><span>⌨️ Respuestas: teclas 1–4</span>
+      <span>🎈 Quien llega primero: botón o teclas A y L</span><span>↩️ Si fallas, rebota al otro equipo</span><span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un 50/50 por equipo</span><span>⌨️ Respuestas: teclas 1–4</span>
     </div>
 
     <div class="board">
@@ -746,7 +746,7 @@ function ask() {
   phase = 'buzz'; holder = null; tried = [];
   $('count').textContent = `${idx + 1} / ${PER_GAME}`;
   $('sideA').classList.add('on'); $('sideB').classList.add('on');
-  $('turn').textContent = '🔔 ¡Toquen la campana!';
+  $('turn').textContent = '🎈 ¿Quién llegó primero al globo?';
   $('turn').className = 'turn open';
   $('tag').textContent = LABEL[item.cat];
   $('qtext').textContent = item.q;
@@ -896,7 +896,7 @@ function reveal(winner) {
   $('streak').hidden = true;
   $('fact').innerHTML = '<b></b> ';
   $('fact').firstChild.textContent = winner !== null ? `¡Punto para ${teams[winner].name}!`
-    : tried.length ? 'Nadie acertó.' : '¡Se acabó el tiempo! Nadie tocó la campana.';
+    : tried.length ? 'Nadie acertó.' : '¡Se acabó el tiempo! Nadie llegó al globo.';
   $('fact').append(item.f);
   $('next').hidden = false;
   $('next').textContent = idx === PER_GAME - 1 ? 'Ver resultado →' : 'Siguiente →';
