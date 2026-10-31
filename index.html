@@ -784,6 +784,32 @@ function runTimer(total, onEnd) {
 }
 
 let actx;
+// notes: [frecuencia, inicio (s), duración (s)]
+function play(notes, type = 'triangle', vol = .22) {
+  try {
+    actx = actx || new AudioContext();
+    const t0 = actx.currentTime;
+    notes.forEach(([f, at, dur]) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(.0001, t0 + at);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + at + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
+      o.connect(g).connect(actx.destination);
+      o.start(t0 + at); o.stop(t0 + at + dur + .05);
+    });
+  } catch {}
+}
+const SOUND = {
+  right: () => play([[784, 0, .18], [988, .09, .18], [1319, .18, .45]]),
+  wrong: () => play([[196, 0, .22], [147, .2, .45]], 'sawtooth', .12),
+  win: () => {
+    play([[392, 0, .16], [523, .16, .16], [659, .32, .16], [784, .48, .3], [659, .8, .14], [784, .94, 1.4]], 'square', .1);
+    play([[523, .94, 1.4], [659, .94, 1.4], [1047, .94, 1.4]], 'triangle', .14);
+  },
+  tie: () => play([[523, 0, .3], [523, .35, .7]], 'triangle', .2),
+};
+
 function bell(i) {
   try {
     actx = actx || new AudioContext();
@@ -843,11 +869,13 @@ function answer(btn) {
     const f = document.createElement('div');
     f.className = 'float'; f.textContent = `+${pts}`;
     $('qcard').appendChild(f); setTimeout(() => f.remove(), 1000);
+    SOUND.right();
     return reveal(holder);
   }
 
   t.streak = 0;
   if (btn) btn.classList.add('bad');
+  SOUND.wrong();
   const other = 1 - holder;
   if (!tried.includes(other)) {
     $('fact').innerHTML = `<b>${btn ? 'Incorrecto' : 'Se acabó el tiempo'}.</b> `;
@@ -903,6 +931,7 @@ function finish() {
     ? `Los dos suman ${A.score.toLocaleString('es-PE')} puntos · puesto ${pos(A)} de ${rows.length} en la tabla`
     : `${win.name} gana por ${(win.score - lose.score).toLocaleString('es-PE')} puntos · puesto ${pos(win)} de ${rows.length} en la tabla`;
   show('end');
+  (tie ? SOUND.tie : SOUND.win)();
   if (!tie || A.hits) confetti();
 }
 
