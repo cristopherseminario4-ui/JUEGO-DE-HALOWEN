@@ -172,6 +172,21 @@
   .turn { display: inline-block; margin-right: 8px; padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 800;
     letter-spacing: .06em; text-transform: uppercase; background: var(--c); color: #fff; max-width: 100%; overflow-wrap: anywhere; }
 
+  .turn.open { background: var(--gold); color: var(--bg); }
+  .opts.wait .opt { opacity: .55; }
+  .buzzers { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .buzz { --c: var(--red); display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; padding: 22px 16px;
+    border-radius: 22px; background: var(--c); color: #fff; font-weight: 900; font-size: clamp(18px, 3vw, 24px);
+    box-shadow: 0 8px 0 rgba(0,0,0,.35), 0 0 34px -8px var(--c); transition: transform .08s, box-shadow .08s, opacity .2s; }
+  .buzz.b { --c: var(--purple); }
+  .buzz span { min-width: 0; overflow-wrap: anywhere; }
+  .buzz span::before { content: '🔔 '; }
+  .buzz kbd { flex: none; font-family: inherit; font-size: 14px; padding: 4px 9px; border-radius: 8px; background: rgba(0,0,0,.25); }
+  .buzz:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .buzz:disabled { opacity: .22; cursor: default; }
+  .buzz.won { opacity: 1; outline: 3px solid var(--gold); outline-offset: 3px; animation: ring .5s; }
+  @keyframes ring { 20% { transform: rotate(-3deg); } 40% { transform: rotate(3deg); } 60% { transform: rotate(-2deg); } 80% { transform: rotate(1deg); } }
+
   .final { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; margin: 26px 0; }
   .fs { min-width: 0; padding: 20px 16px; border-radius: 20px; background: var(--card); border: 2px solid var(--line); }
   .fs.a { --c: var(--red); } .fs.b { --c: var(--purple); }
@@ -208,6 +223,27 @@
   button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
   @media (prefers-reduced-motion: reduce) { .track { animation: none; flex-wrap: wrap; justify-content: center; width: auto; } }
+  /* ---------- Pantalla grande (proyector / TV) ---------- */
+  @media (min-width: 900px) {
+    .wrap { max-width: 1240px; }
+    .hud .pill, .side { font-size: 20px; padding: 10px 20px; }
+    .bar { height: 14px; }
+    .qcard { padding: 40px 44px; border-radius: 30px; }
+    .tag, .turn { font-size: 16px; padding: 6px 14px; }
+    .qtext { font-size: clamp(32px, 3.8vw, 56px); margin: 18px 0 30px; }
+    .opts { gap: 16px; }
+    .opt { font-size: clamp(20px, 2.1vw, 30px); padding: 22px 24px; border-radius: 20px; gap: 16px; }
+    .opt kbd { width: 44px; height: 44px; font-size: 20px; border-radius: 12px; }
+    .buzzers { gap: 20px; margin-top: 22px; }
+    .buzz { font-size: clamp(24px, 2.8vw, 40px); padding: 30px 20px; border-radius: 26px; }
+    .buzz kbd { font-size: 20px; padding: 5px 12px; }
+    .fact { font-size: clamp(17px, 1.6vw, 22px); }
+    .life, .next { font-size: 20px; padding: 14px 24px; }
+    .result h2 { font-size: clamp(44px, 5.5vw, 76px); }
+    .fs span { font-size: 26px; }
+    .fs b { font-size: clamp(56px, 7vw, 96px); }
+    .fs small { font-size: 18px; }
+  }
 </style>
 <canvas id="confetti"></canvas>
 <div class="wrap">
@@ -217,7 +253,7 @@
     <div class="hero">
       <div class="flag"><i></i><i></i><i></i></div>
       <h1>¿Cuánto sabes<br>del <span>Perú</span>?</h1>
-      <p>Equipo contra equipo · 5 preguntas por equipo · ninguna pregunta se repite</p>
+      <p>Equipo contra equipo · el primero en tocar la campana responde · ninguna pregunta se repite</p>
     </div>
     <div class="vs-row">
       <div class="team a">
@@ -246,7 +282,7 @@
       </button>
     </div>
     <div class="rules">
-      <span>⚔️ Turnos alternados</span><span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un 50/50 por equipo</span><span>⌨️ Teclas 1–4</span>
+      <span>🔔 Campanas: teclas A y L</span><span>↩️ Si fallas, rebota al otro equipo</span><span>⚡ Más rápido = más puntos</span><span>🔥 Rachas multiplican</span><span>✂️ Un 50/50 por equipo</span><span>⌨️ Respuestas: teclas 1–4</span>
     </div>
 
     <div class="board">
@@ -275,6 +311,10 @@
       <span class="turn" id="turn"></span><span class="tag" id="tag"></span>
       <h2 class="qtext" id="qtext"></h2>
       <div class="opts" id="opts"></div>
+    </div>
+    <div class="buzzers">
+      <button class="buzz a" id="buzzA"><span id="buzzNameA"></span><kbd>A</kbd></button>
+      <button class="buzz b" id="buzzB"><span id="buzzNameB"></span><kbd>L</kbd></button>
     </div>
     <div class="foot">
       <button class="life" id="fifty">✂️ 50/50</button>
@@ -615,11 +655,11 @@ const GENERAL = [
 ];
 
 const LABEL = { peru: '🦙 Perú', general: '🌎 Cultura general' };
-const PER_GAME = 10, TIME = 20;
+const PER_GAME = 10, TIME = 20, ANSWER_TIME = 10;
 const $ = id => document.getElementById(id);
 
-let mode, teams, deck, idx, timer, tStart, locked;
-const cur = () => teams[idx % 2];
+// phase: 'buzz' (esperando campana) → 'answer' (responde holder) → 'done' (respuesta revelada)
+let mode, teams, deck, idx, timer, tStart, phase, holder, tried, buzzSecs;
 
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const tagged = (list, cat) => list.map(([q, o, f]) => ({ q, ok: o[0], opts: o, f, cat }));
@@ -693,7 +733,8 @@ function start(m) {
   if (deck.length < PER_GAME) return renderHome();
   idx = 0;
   teams = [a, b].map(name => ({ name, score: 0, hits: 0, streak: 0, best: 0, fifty: false, times: [] }));
-  $('nameA').textContent = a; $('nameB').textContent = b;
+  $('nameA').textContent = $('buzzNameA').textContent = a;
+  $('nameB').textContent = $('buzzNameB').textContent = b;
   $('scoreA').textContent = $('scoreB').textContent = 0;
   show('game');
   ask();
@@ -701,75 +742,133 @@ function start(m) {
 
 function ask() {
   const item = deck[idx];
-  locked = false;
   markUsed(item.q);
-  const t = cur(), side = idx % 2 ? 'b' : 'a';
+  phase = 'buzz'; holder = null; tried = [];
   $('count').textContent = `${idx + 1} / ${PER_GAME}`;
-  $('sideA').classList.toggle('on', side === 'a');
-  $('sideB').classList.toggle('on', side === 'b');
-  $('turn').textContent = `Turno de ${t.name}`;
-  $('turn').style.setProperty('--c', side === 'a' ? 'var(--red)' : 'var(--purple)');
+  $('sideA').classList.add('on'); $('sideB').classList.add('on');
+  $('turn').textContent = '🔔 ¡Toquen la campana!';
+  $('turn').className = 'turn open';
   $('tag').textContent = LABEL[item.cat];
   $('qtext').textContent = item.q;
   $('fact').textContent = '';
   $('next').hidden = true;
-  $('fifty').disabled = t.fifty;
-  $('fifty').hidden = false;
-  $('streak').textContent = t.streak >= 2 ? `🔥 x${t.streak}` : '';
-  $('streak').hidden = t.streak < 2;
+  $('fifty').hidden = true;
+  $('streak').hidden = true;
   $('opts').innerHTML = '';
+  $('opts').classList.add('wait');
   shuffle(item.opts).forEach((text, i) => {
     const b = document.createElement('button');
     b.className = 'opt';
     b.innerHTML = `<kbd>${i + 1}</kbd><span></span>`;
     b.querySelector('span').textContent = text;
     b.dataset.v = text;
+    b.disabled = true;
     b.onclick = () => answer(b);
     $('opts').appendChild(b);
   });
-  runTimer();
+  ['buzzA', 'buzzB'].forEach(id => { $(id).disabled = false; $(id).classList.remove('won'); });
+  runTimer(TIME, () => reveal(null));
 }
 
-function runTimer() {
+function runTimer(total, onEnd) {
   cancelAnimationFrame(timer);
   tStart = performance.now();
   const tick = now => {
-    const left = Math.max(0, TIME - (now - tStart) / 1000);
-    $('barFill').style.transform = `scaleX(${left / TIME})`;
+    const left = Math.max(0, total - (now - tStart) / 1000);
+    $('barFill').style.transform = `scaleX(${left / total})`;
     $('bar').classList.toggle('low', left < 5);
-    if (left <= 0) return answer(null);
+    if (left <= 0) return onEnd();
     timer = requestAnimationFrame(tick);
   };
   timer = requestAnimationFrame(tick);
 }
 
-function answer(btn) {
-  if (locked) return;
-  locked = true;
-  cancelAnimationFrame(timer);
-  const item = deck[idx], t = cur();
-  const secs = Math.min(TIME, (performance.now() - tStart) / 1000);
-  t.times.push(secs);
-  const buttons = [...$('opts').children];
-  buttons.forEach(b => { b.disabled = true; if (b.dataset.v === item.ok) b.classList.add('ok'); });
-  const right = btn && btn.dataset.v === item.ok;
+let actx;
+function bell(i) {
+  try {
+    actx = actx || new AudioContext();
+    const t0 = actx.currentTime;
+    [1, 2.76].forEach((h, k) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = (i ? 880 : 1175) * h;
+      g.gain.setValueAtTime(k ? .08 : .3, t0);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + 1.4);
+      o.connect(g).connect(actx.destination);
+      o.start(t0); o.stop(t0 + 1.4);
+    });
+  } catch {}
+}
 
-  if (right) {
+function buzz(i) {
+  if (phase !== 'buzz') return;
+  buzzSecs = Math.min(TIME, (performance.now() - tStart) / 1000);
+  bell(i);
+  $(i ? 'buzzB' : 'buzzA').classList.add('won');
+  give(i);
+}
+
+// Da el turno de responder a un equipo (por campana o por rebote)
+function give(i) {
+  phase = 'answer'; holder = i; tried.push(i);
+  const t = teams[i];
+  $('sideA').classList.toggle('on', i === 0);
+  $('sideB').classList.toggle('on', i === 1);
+  $('turn').className = 'turn';
+  $('turn').style.setProperty('--c', i ? 'var(--purple)' : 'var(--red)');
+  $('turn').textContent = tried.length > 1 ? `Rebote: responde ${t.name}` : `Responde ${t.name}`;
+  $('buzzA').disabled = $('buzzB').disabled = true;
+  $('opts').classList.remove('wait');
+  [...$('opts').children].forEach(b => b.disabled = b.classList.contains('bad') || b.classList.contains('gone'));
+  $('fifty').hidden = false;
+  $('fifty').disabled = t.fifty;
+  $('streak').textContent = `🔥 x${t.streak}`;
+  $('streak').hidden = t.streak < 2;
+  runTimer(ANSWER_TIME, () => answer(null));
+}
+
+function answer(btn) {
+  if (phase !== 'answer') return;
+  cancelAnimationFrame(timer);
+  const item = deck[idx], t = teams[holder];
+  [...$('opts').children].forEach(b => b.disabled = true);
+  $('fifty').hidden = true;
+
+  if (btn && btn.dataset.v === item.ok) {
     t.hits++; t.streak++; t.best = Math.max(t.best, t.streak);
-    const pts = Math.round((100 + 100 * (1 - secs / TIME)) * (1 + Math.min(t.streak - 1, 4) * 0.25));
+    // Quien toca la campana rápido gana más; el rebote vale una base fija
+    const base = tried.length === 1 ? 100 + 100 * (1 - buzzSecs / TIME) : 100;
+    const pts = Math.round(base * (1 + Math.min(t.streak - 1, 4) * 0.25));
     t.score += pts;
-    $(idx % 2 ? 'scoreB' : 'scoreA').textContent = t.score;
+    $(holder ? 'scoreB' : 'scoreA').textContent = t.score;
     const f = document.createElement('div');
     f.className = 'float'; f.textContent = `+${pts}`;
     $('qcard').appendChild(f); setTimeout(() => f.remove(), 1000);
-  } else {
-    t.streak = 0;
-    if (btn) btn.classList.add('bad');
+    return reveal(holder);
   }
-  $('streak').textContent = t.streak >= 2 ? `🔥 x${t.streak}` : '';
-  $('streak').hidden = t.streak < 2;
+
+  t.streak = 0;
+  if (btn) btn.classList.add('bad');
+  const other = 1 - holder;
+  if (!tried.includes(other)) {
+    $('fact').innerHTML = `<b>${btn ? 'Incorrecto' : 'Se acabó el tiempo'}.</b> `;
+    $('fact').append(`¡La pregunta rebota a ${teams[other].name}!`);
+    return give(other);
+  }
+  reveal(null);
+}
+
+function reveal(winner) {
+  phase = 'done';
+  cancelAnimationFrame(timer);
+  const item = deck[idx];
+  [...$('opts').children].forEach(b => { b.disabled = true; if (b.dataset.v === item.ok) b.classList.add('ok'); });
+  $('opts').classList.remove('wait');
+  $('buzzA').disabled = $('buzzB').disabled = true;
   $('fifty').hidden = true;
-  $('fact').innerHTML = `<b>${right ? '¡Correcto!' : btn ? 'Casi…' : '¡Se acabó el tiempo!'}</b> `;
+  $('streak').hidden = true;
+  $('fact').innerHTML = '<b></b> ';
+  $('fact').firstChild.textContent = winner !== null ? `¡Punto para ${teams[winner].name}!`
+    : tried.length ? 'Nadie acertó.' : '¡Se acabó el tiempo! Nadie tocó la campana.';
   $('fact').append(item.f);
   $('next').hidden = false;
   $('next').textContent = idx === PER_GAME - 1 ? 'Ver resultado →' : 'Siguiente →';
@@ -782,7 +881,7 @@ function next() {
 }
 
 function finish() {
-  const [A, B] = teams, per = PER_GAME / 2;
+  const [A, B] = teams, per = PER_GAME;
   const tie = A.score === B.score, win = A.score > B.score ? A : B, lose = win === A ? B : A;
   $('rEmoji').textContent = tie ? '🤝' : '🏆';
   $('rTitle').textContent = tie ? '¡Empate!' : `¡Gana ${win.name}!`;
@@ -808,11 +907,13 @@ function finish() {
 }
 
 function fifty() {
-  if (cur().fifty || locked) return;
-  cur().fifty = true;
+  if (phase !== 'answer' || teams[holder].fifty) return;
+  teams[holder].fifty = true;
   $('fifty').disabled = true;
+  // Deja siempre la correcta y una incorrecta a la vista
   const ok = deck[idx].ok;
-  shuffle([...$('opts').children].filter(b => b.dataset.v !== ok)).slice(0, 2).forEach(b => b.classList.add('gone'));
+  const wrong = [...$('opts').children].filter(b => b.dataset.v !== ok && !b.classList.contains('bad') && !b.classList.contains('gone'));
+  shuffle(wrong).slice(0, wrong.length - 1).forEach(b => { b.classList.add('gone'); b.disabled = true; });
 }
 
 function confetti() {
@@ -843,6 +944,8 @@ $('track').innerHTML = [...SPONSORS, ...SPONSORS]
 document.querySelectorAll('.mode').forEach(b => b.onclick = () => start(b.dataset.mode));
 $('next').onclick = next;
 $('fifty').onclick = fifty;
+$('buzzA').onclick = () => buzz(0);
+$('buzzB').onclick = () => buzz(1);
 $('again').onclick = () => {
   $('teamA').value = $('teamB').value = '';
   $('teamHint').textContent = 'Escriban los nombres de los dos equipos y elijan una categoría.';
@@ -864,8 +967,10 @@ $('reset').onclick = () => {
 document.addEventListener('keydown', e => {
   if (!$('game').classList.contains('on')) return;
   const n = parseInt(e.key, 10);
-  if (n >= 1 && n <= 4 && !locked) { const b = $('opts').children[n - 1]; if (b && !b.classList.contains('gone')) answer(b); }
-  else if ((e.key === 'Enter' || e.key === ' ') && locked && e.target !== $('next')) { e.preventDefault(); next(); }
+  const k = e.key.toLowerCase();
+  if (k === 'a' || k === 'l') buzz(k === 'a' ? 0 : 1);
+  else if (n >= 1 && n <= 4 && phase === 'answer') { const b = $('opts').children[n - 1]; if (b && !b.disabled) answer(b); }
+  else if ((e.key === 'Enter' || e.key === ' ') && phase === 'done' && e.target !== $('next')) { e.preventDefault(); next(); }
 });
 renderHome();
 </script>
